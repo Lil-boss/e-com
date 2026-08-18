@@ -1,0 +1,88 @@
+.variant-builder {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.variant-builder > header {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 16px;
+}
+
+.variant-builder > header > div {
+  min-width: 0;
+}
+
+.variant-builder > header > button {
+  width: auto;
+  max-width: 100%;
+  flex: none;
+  justify-self: end;
+}
+
+@media (max-width: 620px) {
+  .variant-builder > header {
+    grid-template-columns: 1fr;
+  }
+
+  .variant-builder > header > button {
+    width: 100%;
+    margin-top: 8px;
+    justify-self: stretch;
+  }
+}
+
+.inventory-modal {
+  width: min(480px, calc(100vw - 32px));
+  overflow: hidden;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.inventory-modal > header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ad-line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.inventory-modal header p,
+.inventory-modal header h2 { margin: 0; }
+.inventory-modal header p { color: #be5639; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.inventory-modal header small { color: #768078; }
+.inventory-modal header button { width: 34px; height: 34px; border: 1px solid var(--ad-line); border-radius: 50%; background: #fff; }
+.inventory-modal header svg { width: 16px; }
+.inventory-modal > label { margin: 16px 20px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; }
+.inventory-modal input,
+.inventory-modal textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--ad-line); border-radius: 7px; }
+.inventory-modal label small { color: #7b847c; font-weight: 400; }
+.inventory-modal > footer { padding: 14px 20px; border-top: 1px solid var(--ad-line); display: flex; justify-content: flex-end; gap: 8px; }
+.inventory-modal footer button { min-height: 38px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 7px; background: #fff; }
+.inventory-modal footer button:last-child { border-color: var(--ad-green); color: #fff; background: var(--ad-green); }
+.inventory-empty { padding: 50px 20px; text-align: center; color: #7a847c; }
+
+.company-settings { max-width: 1040px; margin: 0 auto; padding: 34px; border: 1px solid var(--ad-line); border-radius: 12px; background: #fff; }
+.company-setting-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 14px; align-items: center; margin-bottom: 12px; }
+.company-setting-row > label { text-align: right; font-size: 13px; font-weight: 600; }
+.company-setting-row.required > label::before { content: "* "; color: #d54a3d; }
+.company-setting-row > input,
+.company-setting-row > select,
+.company-setting-row > textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; border: 1px solid #d8ded8; border-radius: 7px; outline: none; background: #fff; }
+.company-setting-row > input:focus,
+.company-setting-row > select:focus,
+.company-setting-row > textarea:focus { border-color: var(--ad-leaf); box-shadow: 0 0 0 3px rgba(47,122,82,.1); }
+.logo-row { align-items: start; }
+.logo-upload { position: relative; width: 150px; height: 120px; overflow: hidden; border: 1px dashed #aeb9b0; border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ad-green); background: #f1f5f1; }
+.logo-upload input { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.logo-upload img { width: 100%; height: 100%; box-sizing: border-box; display: block; object-fit: contain; padding: 10px; }
+.logo-upload svg { width: 25px; }
+.logo-upload span { margin-top: 5px; font-size: 12px; font-weight: 700; }
+.logo-upload small { max-width: 125px; margin-top: 3px; color: #7b857d; text-align: center; font-size: 9px; }
+.footer-row { align-items: start; }
+.company-settings > footer { margin: 24px 0 0 194px; padding-top: 18px; border-top: 1px solid var(--ad-line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.company-settings > footer > button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 7px; color: #fff; background: var(--ad-green); font-weight: 700; }
+@media (max-width: 700px) { .company-settings { padding: 20px 15px; } .company-setting-row { grid-template-columns: 1fr; gap: 5px; } .company-setting-row > label { text-align: left; } .company-settings > footer { margin-left: 0; align-items: stretch; flex-direction: column; } .company-settings > footer > button { width: 100%; } }
