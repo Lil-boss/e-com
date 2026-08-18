@@ -85,4 +85,7 @@
 .footer-row { align-items: start; }
 .company-settings > footer { margin: 24px 0 0 194px; padding-top: 18px; border-top: 1px solid var(--ad-line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .company-settings > footer > button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 7px; color: #fff; background: var(--ad-green); font-weight: 700; }
+.admin-brand.has-company-logo { width: 100%; max-width: 244px; box-sizing: border-box; overflow: hidden; align-items: center; }
+.admin-brand.has-company-logo > img { display: block; flex: 0 1 184px; min-width: 0; width: 100% !important; max-width: 184px !important; height: 48px !important; object-fit: contain; object-position: left center; }
+.admin-brand.has-company-logo > button { margin-left: auto; }
 @media (max-width: 700px) { .company-settings { padding: 20px 15px; } .company-setting-row { grid-template-columns: 1fr; gap: 5px; } .company-setting-row > label { text-align: left; } .company-settings > footer { margin-left: 0; align-items: stretch; flex-direction: column; } .company-settings > footer > button { width: 100%; } }

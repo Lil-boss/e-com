@@ -85,6 +85,7 @@ type Props = {
   orders: Order[];
   categories: Array<Record<string, unknown>>;
   sections: Array<Record<string, unknown>>;
+  logoUrl: string;
 };
 type VariantDraft = {
   id: string;
@@ -128,6 +129,7 @@ export function AdminDashboard({
   orders,
   categories,
   sections,
+  logoUrl,
 }: Props) {
   const [module, setModule] = useState("dashboard");
   const [sidebar, setSidebar] = useState(false);
@@ -302,12 +304,19 @@ export function AdminDashboard({
   return (
     <main className="admin-page">
       <aside className={`admin-sidebar ${sidebar ? "open" : ""}`}>
-        <div className="admin-brand">
-          <span>
-            <Leaf />
-          </span>
-          <strong>তরুণ</strong>
-          <small>ADMIN</small>
+        <div className={`admin-brand ${logoUrl ? "has-company-logo" : ""}`}>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt="Company logo"
+              style={{ width: "100%", maxWidth: 184, height: 48, objectFit: "contain", objectPosition: "left center" }}
+            />
+          ) : (<>
+            <span><Leaf /></span>
+            <strong>তরুণ</strong>
+            <small>ADMIN</small>
+          </>)}
           <button onClick={() => setSidebar(false)}>
             <X />
           </button>

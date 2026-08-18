@@ -22,7 +22,7 @@ const demoOrders = [
 ];
 
 export default async function AdminPage() {
-  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} />;
+  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} logoUrl="" />;
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
@@ -37,13 +37,15 @@ export default async function AdminPage() {
     staff = bootstrappedStaff;
   }
   if (!staff?.is_active) redirect("/admin/login?error=forbidden");
-  const [productsResult, ordersResult, categoriesResult, sectionsResult] = await Promise.all([
+  const [productsResult, ordersResult, categoriesResult, sectionsResult, storeResult] = await Promise.all([
     supabase.from("products").select("*,product_media(storage_path,sort_order),categories(name_bn),product_variants(id,sku,title,inventory(on_hand,reserved,low_stock_threshold))").order("created_at",{ascending:false}),
     supabase.from("orders").select("id,order_number,customer_name,customer_phone,status,payment_status,grand_total,created_at,district,order_items(count)").order("created_at",{ascending:false}).limit(50),
     supabase.from("categories").select("id,name_bn,slug,is_active,show_on_home,sort_order").order("sort_order"),
     supabase.from("homepage_sections").select("section_key,section_type,title,subtitle,content,is_active,sort_order").order("sort_order"),
+    supabase.from("store_settings").select("value").eq("key","store").maybeSingle(),
   ]);
   const products = (productsResult.data || []).map((p: Record<string,unknown>) => { const variant=(p.product_variants as Array<{id:string;sku:string;title:string;inventory?:{on_hand?:number;reserved?:number;low_stock_threshold?:number}}>)?.[0]; return ({ ...p, image: ((p.product_media as Array<{storage_path:string}>)?.[0]?.storage_path || ""), images: (p.product_media as Array<{storage_path:string}>)?.map(media=>media.storage_path) || [], category: (p.categories as {name_bn?:string})?.name_bn || "—", variant_id:variant?.id,variant_title:variant?.title,stock:variant?.inventory?.on_hand||0,reserved:variant?.inventory?.reserved||0,low_stock_threshold:variant?.inventory?.low_stock_threshold||5 }) }) as unknown as Product[];
   const orders = (ordersResult.data || []).map((o: Record<string,unknown>) => ({ ...o, items: (o.order_items as Array<{count?:number}>)?.[0]?.count || 0 })) as unknown as Order[];
-  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} />;
+  const storeValue = (storeResult.data?.value || {}) as Record<string, unknown>;
+  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} logoUrl={String(storeValue.logo_url || "")} />;
 }

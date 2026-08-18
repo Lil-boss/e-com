@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/components/cart-provider";
+import { SiteHeader } from "@/components/site-header";
 import {
   ArrowLeft,
   ArrowRight,
@@ -140,11 +141,13 @@ const heroSlides = [
   { image: "https://torunmart.com/wp-content/uploads/2025/09/1000131497-500x750.png", alt: "ঘানি ভাঙা সরিষার তেল", eyebrow: "পরিবারের জন্য", name: "ঘানি ভাঙা সরিষার তেল", price: "৫ লিটার · ৳১,৩০০" },
 ];
 
-function Logo() {
+function Logo({ logoUrl = "" }: { logoUrl?: string }) {
   return (
     <a className="logo" href="#" aria-label="Torun Mart হোম">
-      <span className="logo-mark"><Leaf size={24} strokeWidth={2.4} /></span>
-      <span className="logo-type"><strong>তরুণ</strong><small>mart</small></span>
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="store-logo-image" src={logoUrl} alt="Torun Mart" />
+      ) : <><span className="logo-mark"><Leaf size={24} strokeWidth={2.4} /></span><span className="logo-type"><strong>তরুণ</strong><small>mart</small></span></>}
     </a>
   );
 }
@@ -194,13 +197,12 @@ function ProductCard({ product }: { product: (typeof products)[number] }) {
 }
 
 export default function HomePage() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
   const [dynamicCategories, setDynamicCategories] = useState(categories);
   const [dynamicProducts, setDynamicProducts] = useState(products);
   const [dynamicReviews, setDynamicReviews] = useState(reviews);
   const [dynamicHeroSlides, setDynamicHeroSlides] = useState(heroSlides);
+  const [storeLogoUrl, setStoreLogoUrl] = useState("");
   const { count, subtotal, openCart } = useCart();
 
   useEffect(() => {
@@ -211,15 +213,18 @@ export default function HomePage() {
   useEffect(() => {
     const loadStorefront = async () => {
       try {
-        const response = await fetch("/api/storefront");
+        const response = await fetch("/api/storefront", { cache: "no-store" });
         const data = await response.json() as {
           configured?: boolean;
           categories?: Array<{ name_bn: string; description?: string; image_path?: string }>;
           products?: Array<{ id: string; name_bn: string; slug: string; sku: string; short_description?: string; base_price: number; compare_at_price?: number; weight_grams?: number; product_media?: Array<{ storage_path: string }>; reviews?: Array<{ rating: number }> }>;
           sections?: Array<{ section_key: string; content: { slides?: Array<{ image: string; eyebrow: string; name: string; price: string }> } }>;
           reviews?: Array<{ id: string; rating: number; body: string; profiles?: { full_name?: string } | null; products?: { name_bn?: string } | null }>;
+          settings?: Array<{ key: string; value: Record<string, unknown> }>;
         };
         if (!response.ok || !data.configured) return;
+        const storeSettings = data.settings?.find((setting) => setting.key === "store")?.value;
+        if (storeSettings?.logo_url) setStoreLogoUrl(String(storeSettings.logo_url));
         if (data.categories?.length) setDynamicCategories(data.categories.slice(0, 4).map((category, index) => ({ name: category.name_bn, count: category.description || "পণ্য দেখুন", image: category.image_path || categories[index % categories.length].image, tone: ["gold", "green", "rust", "cream"][index % 4] })));
         if (data.products?.length) setDynamicProducts(data.products.slice(0, 8).map((product) => { const ratings = product.reviews || []; const average = ratings.length ? ratings.reduce((sum, review) => sum + review.rating, 0) / ratings.length : 0; return { id: product.slug || product.id, name: product.name_bn, meta: product.weight_grams ? `${product.weight_grams.toLocaleString("bn-BD")} গ্রাম` : product.sku, price: `৳${Number(product.base_price).toLocaleString("bn-BD")}`, numericPrice: Number(product.base_price), oldPrice: product.compare_at_price ? `৳${Number(product.compare_at_price).toLocaleString("bn-BD")}` : "", discount: product.compare_at_price ? `–${Math.round((1 - Number(product.base_price) / Number(product.compare_at_price)) * 100)}%` : "", rating: average ? average.toFixed(1) : "নতুন", reviews: String(ratings.length), image: product.product_media?.[0]?.storage_path || products[0].image, badge: product.compare_at_price ? "বিশেষ মূল্য" : "নতুন" }; }));
         const hero = data.sections?.find((section) => section.section_key === "hero");
@@ -244,38 +249,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <header className="site-header">
-        <div className="container header-main">
-          <button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="মেনু খুলুন"><Menu /></button>
-          <Logo />
-          <label className="search-box">
-            <Search size={19} />
-            <input type="search" placeholder="পণ্য, ক্যাটাগরি বা ব্র্যান্ড খুঁজুন..." aria-label="পণ্য খুঁজুন" />
-            <span>সব ক্যাটাগরি <ChevronDown size={15} /></span>
-          </label>
-          <nav className="header-actions" aria-label="ইউজার অ্যাকশন">
-            <Link href="/account"><CircleUserRound /><span>অ্যাকাউন্ট<small>লগইন করুন</small></span></Link>
-            <a href="#"><Heart /><i>2</i></a>
-            <button className="header-cart-button" onClick={openCart} aria-label={`কার্ট খুলুন, ${count}টি পণ্য`}><ShoppingBag />{count > 0 && <i>{count}</i>}<span>কার্ট<small>৳{subtotal.toLocaleString("bn-BD")}</small></span></button>
-          </nav>
-        </div>
-        <div className={`nav-wrap ${menuOpen ? "open" : ""}`}>
-          <div className="container nav-inner">
-            <button className="category-button" onClick={() => setCategoriesOpen(!categoriesOpen)} aria-expanded={categoriesOpen} aria-controls="category-dropdown"><SlidersHorizontal size={18} /> সব ক্যাটাগরি <ChevronDown className={categoriesOpen ? "rotated" : ""} size={15} /></button>
-            <div className={`category-dropdown ${categoriesOpen ? "open" : ""}`} id="category-dropdown">
-              <a href="#categories" onClick={() => setCategoriesOpen(false)}><span><Leaf /></span><p><strong>খাঁটি খাবার</strong><small>মধু, তেল, ঘি ও খেজুর</small></p><ChevronLeft /></a>
-              <a href="#categories" onClick={() => setCategoriesOpen(false)}><span><Sparkles /></span><p><strong>মৌসুমি ফল</strong><small>বাগান থেকে সরাসরি</small></p><ChevronLeft /></a>
-              <a href="#categories" onClick={() => setCategoriesOpen(false)}><span><BookOpen /></span><p><strong>বই ও কম্বো</strong><small>বাছাই করা জনপ্রিয় বই</small></p><ChevronLeft /></a>
-              <a href="#categories" onClick={() => setCategoriesOpen(false)}><span><ShoppingBag /></span><p><strong>ফ্যাশন ও লাইফস্টাইল</strong><small>নতুন কালেকশন</small></p><ChevronLeft /></a>
-              <a className="dropdown-all" href="#products" onClick={() => setCategoriesOpen(false)}>সব পণ্য দেখুন <ArrowLeft /></a>
-            </div>
-            <nav className="primary-nav" aria-label="প্রধান নেভিগেশন">
-              <a className="active" href="#">হোম</a><a href="#categories">খাঁটি খাবার</a><a href="#categories">মৌসুমি ফল</a><a href="#categories">বই</a><a href="#categories">ফ্যাশন</a><a className="sale-link" href="#products">অফার</a>
-            </nav>
-            <a className="track-link" href="#"><Truck size={17} /> অর্ডার ট্র্যাক করুন</a>
-          </div>
-        </div>
-      </header>
+      <SiteHeader logoUrl={storeLogoUrl} cartCount={count} cartSubtotal={subtotal} onOpenCart={openCart} />
 
       <section className="hero">
         <div className="container hero-grid">
@@ -389,7 +363,7 @@ export default function HomePage() {
 
       <footer className="footer">
         <div className="container footer-grid">
-          <div className="footer-brand"><Logo /><p>বিশ্বস্ত পণ্য, সহজ কেনাকাটা। দেশের যেকোনো প্রান্তে আপনার প্রয়োজন পৌঁছে দিই যত্নের সঙ্গে।</p><div className="socials"><a href="#" aria-label="Facebook"><Facebook /></a><a href="#" aria-label="Instagram"><Instagram /></a><a href="#" aria-label="WhatsApp"><MessageCircle /></a></div></div>
+          <div className="footer-brand"><Logo logoUrl={storeLogoUrl} /><p>বিশ্বস্ত পণ্য, সহজ কেনাকাটা। দেশের যেকোনো প্রান্তে আপনার প্রয়োজন পৌঁছে দিই যত্নের সঙ্গে।</p><div className="socials"><a href="#" aria-label="Facebook"><Facebook /></a><a href="#" aria-label="Instagram"><Instagram /></a><a href="#" aria-label="WhatsApp"><MessageCircle /></a></div></div>
           <div><h3>কেনাকাটা</h3><a href="#">সব পণ্য</a><a href="#">খাঁটি খাবার</a><a href="#">মৌসুমি ফল</a><a href="#">বই ও কম্বো</a><a href="#">অফার</a></div>
           <div><h3>সহায়তা</h3><a href="#">অর্ডার ট্র্যাক করুন</a><a href="#">ডেলিভারি তথ্য</a><a href="#">রিটার্ন ও রিফান্ড</a><a href="#">প্রশ্নোত্তর</a><a href="#">যোগাযোগ</a></div>
           <div><h3>যোগাযোগ</h3><p>বারিক ভিলা, ১১/১ ফোল্ডার স্ট্রিট,<br />ওয়ারী, ঢাকা–১২০৩</p><a className="contact" href="tel:+8801886494257">+৮৮০ ১৮৮৬–৪৯৪২৫৭</a><a className="contact" href="mailto:admin@torunmart.com">admin@torunmart.com</a></div>

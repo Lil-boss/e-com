@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCart } from "@/components/cart-provider";
+import { SiteHeader } from "@/components/site-header";
 import {
   ArrowLeft,
   BookOpen,
@@ -48,8 +49,8 @@ const fallbackRelated = [
   { id: "deshi-ghee-1kg", name: "দেশি গাওয়া ঘি", meta: "১ কেজি", price: "৳১,৬০০", numericPrice: 1600, old: "৳১,৮০০", image: "https://torunmart.com/wp-content/uploads/2026/02/35017-500x750.jpg" },
 ];
 
-function ProductLogo() {
-  return <Link className="pd-logo" href="/"><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></Link>;
+function ProductLogo({ logoUrl = "" }: { logoUrl?: string }) {
+  return <Link className="pd-logo" href="/">{logoUrl ? <img src={logoUrl} alt="Torun Mart" /> : <><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></>}</Link>;
 }
 
 export default function ProductDetailPage() {
@@ -65,7 +66,7 @@ export default function ProductDetailPage() {
   const [postcode, setPostcode] = useState("");
   const [checkedDelivery, setCheckedDelivery] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [storeLogoUrl, setStoreLogoUrl] = useState("");
   const { addItem, count, subtotal, openCart } = useCart();
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function ProductDetailPage() {
       } catch { /* Keep the seeded design fallback during setup. */ }
     };
     loadProduct();
+    fetch("/api/storefront", { cache: "no-store" }).then(response => response.json()).then(data => { const store = data.settings?.find((setting: { key: string }) => setting.key === "store")?.value; if (store?.logo_url) setStoreLogoUrl(String(store.logo_url)); }).catch(() => undefined);
   }, [params.slug]);
 
   useEffect(() => {
@@ -108,15 +110,7 @@ export default function ProductDetailPage() {
     <main className="product-page">
       <div className="pd-announcement"><div className="pd-container"><span><Truck /> ঢাকায় ডেলিভারি ২–৩ দিন</span><p>প্রথম অর্ডারে ১০% ছাড় — কোড: <b>NOTUN10</b></p><a href="#help"><MessageCircle /> সাহায্য লাগবে?</a></div></div>
 
-      <header className="pd-header">
-        <div className="pd-container pd-header-row">
-          <button className="pd-menu" aria-label="মেনু"><Menu /></button>
-          <ProductLogo />
-          <label className="pd-search"><Search /><input placeholder="পণ্য, ক্যাটাগরি বা ব্র্যান্ড খুঁজুন..." /><button>খুঁজুন</button></label>
-          <nav><Link href="/account"><CircleUserRound /><span>অ্যাকাউন্ট</span></Link><a href="#"><Heart /><i>2</i></a><button className="pd-cart-button" onClick={openCart}><ShoppingBag />{count > 0 && <i>{count}</i>}<span>৳{subtotal.toLocaleString("bn-BD")}</span></button></nav>
-        </div>
-        <div className="pd-nav"><div className="pd-container"><button className="pd-category-button" onClick={() => setCategoriesOpen(!categoriesOpen)} aria-expanded={categoriesOpen} aria-controls="product-category-dropdown"><Menu /> সব ক্যাটাগরি <ChevronDown className={categoriesOpen ? "rotated" : ""} /></button><div className={`category-dropdown ${categoriesOpen ? "open" : ""}`} id="product-category-dropdown"><Link href="/#categories" onClick={() => setCategoriesOpen(false)}><span><Leaf /></span><p><strong>খাঁটি খাবার</strong><small>মধু, তেল, ঘি ও খেজুর</small></p><ChevronLeft /></Link><Link href="/#categories" onClick={() => setCategoriesOpen(false)}><span><Sparkles /></span><p><strong>মৌসুমি ফল</strong><small>বাগান থেকে সরাসরি</small></p><ChevronLeft /></Link><Link href="/#categories" onClick={() => setCategoriesOpen(false)}><span><BookOpen /></span><p><strong>বই ও কম্বো</strong><small>বাছাই করা জনপ্রিয় বই</small></p><ChevronLeft /></Link><Link href="/#categories" onClick={() => setCategoriesOpen(false)}><span><ShoppingBag /></span><p><strong>ফ্যাশন ও লাইফস্টাইল</strong><small>নতুন কালেকশন</small></p><ChevronLeft /></Link><Link className="dropdown-all" href="/#products" onClick={() => setCategoriesOpen(false)}>সব পণ্য দেখুন <ArrowLeft /></Link></div><nav><Link href="/">হোম</Link><Link href="/#categories">খাঁটি খাবার</Link><Link href="/#categories">মৌসুমি ফল</Link><Link href="/#categories">বই</Link><Link href="/#categories">ফ্যাশন</Link><Link className="offer" href="/#products">অফার</Link></nav><a href="#"><Truck /> অর্ডার ট্র্যাক করুন</a></div></div>
-      </header>
+      <SiteHeader logoUrl={storeLogoUrl} cartCount={count} cartSubtotal={subtotal} onOpenCart={openCart} />
 
       <div className="pd-container breadcrumb"><Link href="/">হোম</Link><ChevronLeft /><Link href="/#products">পণ্য</Link><ChevronLeft /><span>{productInfo.name}</span></div>
 
