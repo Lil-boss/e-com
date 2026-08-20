@@ -171,6 +171,22 @@ export function AdminDashboard({
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [variantRows, setVariantRows] = useState<VariantDraft[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+
+  /** Appends uploaded image URLs to the textarea the form already submits. */
+  const uploadMedia = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploadingMedia(true);
+    const form = new FormData();
+    Array.from(files).forEach((file) => form.append("files", file));
+    const response = await fetch("/api/admin/media", { method: "POST", body: form });
+    const result = await response.json().catch(() => ({}));
+    setUploadingMedia(false);
+    if (!response.ok) { notify(result.error || "Image upload failed"); return; }
+    const field = document.querySelector<HTMLTextAreaElement>('textarea[name="image_paths"]');
+    if (field) field.value = [field.value.trim(), ...result.urls].filter(Boolean).join("\n");
+    notify(`${result.urls.length} image(s) uploaded`);
+  };
   const filtered = useMemo(
     () =>
       products.filter(
@@ -805,8 +821,19 @@ export function AdminDashboard({
                     .filter(Boolean)
                     .join("\n")}
                 />
+                <div className="media-upload">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/avif"
+                    multiple
+                    disabled={uploadingMedia}
+                    onChange={(event) => uploadMedia(event.target.files)}
+                  />
+                  <span>{uploadingMedia ? "Uploading..." : "Upload images"}</span>
+                </div>
                 <small>
                   One URL per line, or comma separated. The first image is the cover.
+                  Uploads are appended to the list above.
                 </small>
               </label>
               <label className="full">

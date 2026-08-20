@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// Product images uploaded through the admin live in this project's storage bucket.
+// Without this the optimizer rejects them and the page fails to render.
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : "";
+
 const nextConfig: NextConfig = {
   agentRules: false,
   experimental: {
@@ -18,6 +24,9 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      ...(supabaseHost
+        ? [{ protocol: "https" as const, hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }]
+        : []),
     ],
   },
 };

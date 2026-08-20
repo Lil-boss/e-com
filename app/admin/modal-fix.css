@@ -329,3 +329,6 @@
 .admin-toolbar-clear { height: 41px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 8px; background: #fff; color: var(--ad-green); font: inherit; font-weight: 600; cursor: pointer; }
 .admin-toolbar-clear:hover { background: #f1f5f1; }
 @media (max-width: 760px) { .admin-toolbar { flex-wrap: wrap; } .admin-toolbar label { width: 100%; } }
+.media-upload { position: relative; margin-top: 9px; height: 42px; display: grid; place-items: center; border: 1px dashed #aeb9b0; border-radius: 8px; background: #f6f8f5; color: var(--ad-green); font-size: 12px; font-weight: 600; }
+.media-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.media-upload input:disabled { cursor: progress; }
