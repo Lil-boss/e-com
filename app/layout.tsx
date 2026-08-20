@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { CartProvider } from "@/components/cart-provider";
+import { WishlistProvider } from "@/components/wishlist-provider";
 
 export const metadata: Metadata = {
   title: "Torun Mart — বিশ্বস্ত পণ্য, সহজ কেনাকাটা",
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@100..800&display=swap" rel="stylesheet" />
       </head>
-      <body><CartProvider>{children}</CartProvider></body>
+      <body><WishlistProvider><CartProvider>{children}</CartProvider></WishlistProvider></body>
     </html>
   );
 }

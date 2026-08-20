@@ -1602,6 +1602,8 @@ function SettingsModule({ configured }: { configured: boolean }) {
     email: "admin@torunmart.com",
     currency: "BDT",
     website: "",
+    facebook: "",
+    instagram: "",
     bin: "",
     mushak: "",
     logo_url: "",
@@ -1748,6 +1750,24 @@ function SettingsModule({ configured }: { configured: boolean }) {
               value={settings.website}
               onChange={(e) => change("website", e.target.value)}
               placeholder="https://example.com"
+            />
+          </div>
+          <div className="company-setting-row">
+            <label>Facebook Page</label>
+            <input
+              type="url"
+              value={settings.facebook}
+              onChange={(e) => change("facebook", e.target.value)}
+              placeholder="https://facebook.com/yourpage"
+            />
+          </div>
+          <div className="company-setting-row">
+            <label>Instagram Profile</label>
+            <input
+              type="url"
+              value={settings.instagram}
+              onChange={(e) => change("instagram", e.target.value)}
+              placeholder="https://instagram.com/yourprofile"
             />
           </div>
           <div className="company-setting-row">

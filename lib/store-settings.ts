@@ -5,7 +5,14 @@ import { useEffect, useState } from "react";
 export type StoreSettings = {
   name?: string; tagline?: string; address?: string; phone?: string; email?: string;
   currency?: string; website?: string; footer?: string; logo_url?: string;
+  facebook?: string; instagram?: string;
 };
+
+export type DeliverySettings = {
+  inside_dhaka?: number; outside_dhaka?: number; inside_days?: string; outside_days?: string; return_days?: number;
+};
+
+export type AnnouncementSettings = { text?: string; code?: string; enabled?: boolean };
 
 const symbols: Record<string, string> = { BDT: "৳", USD: "$", EUR: "€", GBP: "£", INR: "₹", SAR: "﷼", AED: "د.إ" };
 export const currencySymbol = (code?: string) => symbols[String(code || "BDT").toUpperCase()] || "৳";
