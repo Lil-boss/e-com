@@ -46,13 +46,15 @@ export default function CheckoutPage() {
     if (!form.reportValidity() || items.length === 0) return;
     const data = new FormData(form);
     setSubmitting(true); setSubmitError("");
-    let nextOrderNumber = `TM-${String(Date.now()).slice(-7)}`;
+    let nextOrderNumber = "";
     let nextOrderId = "";
     try {
       const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, variantId: item.variantId, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, coupon_code: couponApplied || undefined, note: data.get("note") }) });
       const result = await response.json();
-      if (response.ok) { nextOrderNumber = result.order_number; nextOrderId = String(result.id || ""); }
-      else if (response.status !== 503) throw new Error(result.error || "অর্ডার সম্পন্ন হয়নি");
+      // every failure is a failure: inventing an order number here silently lost orders
+      if (!response.ok) throw new Error(result.error || "অর্ডার সম্পন্ন হয়নি");
+      nextOrderNumber = result.order_number;
+      nextOrderId = String(result.id || "");
     } catch (error) { setSubmitting(false); setSubmitError(error instanceof Error ? error.message : "অর্ডার সম্পন্ন হয়নি"); return; }
     setSubmitting(false);
     setOrderNumber(nextOrderNumber);

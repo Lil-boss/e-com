@@ -350,6 +350,17 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
         <header>
           <div><p>Order operations</p><h2>{order ? `#${order.order_number}` : "Order"}</h2></div>
           <div className="modal-head-actions">
+            {order && ["cancelled", "delivered", "returned", "refunded"].includes(order.status) && (
+              <button type="button" className="modal-delete" onClick={async () => {
+                if (!window.confirm(`Delete order #${order.order_number}? This cannot be undone.`)) return;
+                const response = await fetch(`/api/admin/orders?id=${orderId}`, { method: "DELETE" });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) { notify(result.error || "Order could not be deleted"); return; }
+                notify("Order deleted");
+                onUpdated();
+                onClose();
+              }}><Trash2 /> Delete</button>
+            )}
             {order && <a className="modal-invoice" href={`/invoice/${orderId}`} target="_blank" rel="noreferrer noopener"><Printer /> Invoice</a>}
             <button type="button" onClick={onClose}><X /></button>
           </div>

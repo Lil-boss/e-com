@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ORDERS, requireStaff } from "@/lib/supabase/admin-auth";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { ORDERS, OWNER, requireStaff } from "@/lib/supabase/admin-auth";
+import { isSupabaseConfigured, supabaseUrl } from "@/lib/supabase/config";
 
 const transitions: Record<string,string[]> = { pending:["confirmed","cancelled"],confirmed:["processing","cancelled"],processing:["packed","cancelled"],packed:["shipped"],shipped:["delivered"],delivered:["return_requested"],return_requested:["returned","replaced"],returned:["refunded","replaced"] };
 const paymentStates = ["pending","authorized","paid","failed","refunded","partially_refunded"];
@@ -52,15 +54,55 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   let stockWarning: string | null = null;
   if (updates.status) {
-    // ponytail: restock on returned/refunded is not handled; add a third RPC call here if returns become common.
     const stockFunction = body.status === "cancelled" ? "release_order_stock" : body.status === "delivered" ? "consume_order_stock" : null;
     if (stockFunction) {
       const { error: stockError } = await auth.supabase.rpc(stockFunction, { p_order_id: body.id });
       // Surfaced rather than swallowed: a failed RPC leaves stock wrong while the status looks fine.
       if (stockError) stockWarning = `Status changed, but stock was not updated: ${stockError.message}`;
     }
+    // Delivery consumed the stock, so a return has to put it back.
+    // ponytail: done in JS because reserve/release/consume live in an already-applied
+    // migration; fold restock into an RPC next time one is written.
+    if (body.status === "returned") {
+      const problem = await restockOrder(body.id);
+      if (problem) stockWarning = `Status changed, but stock was not restocked: ${problem}`;
+    }
     await auth.supabase.from("order_status_events").insert({ order_id: body.id, from_status: order.status, to_status: body.status, note: body.note || null, created_by: auth.userId });
   }
   await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: body.shipment && !changesOrder ? "order.shipment_updated" : "order.updated", entity_type: "order", entity_id: body.id, before_data: order, after_data: body.shipment && !changesOrder ? { shipment: body.shipment } : updates });
   return NextResponse.json(stockWarning ? { ...data, warning: stockWarning } : data);
+}
+
+export async function DELETE(request: NextRequest) {
+  const auth = await requireStaff(OWNER);
+  if (auth.error) return auth.error;
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Order id is required" }, { status: 400 });
+  const { data: order } = await auth.supabase.from("orders").select("status,order_number").eq("id", id).single();
+  if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  // A live order still holds reserved stock; cancel it first so the reservation is released.
+  if (!["cancelled", "delivered", "returned", "refunded"].includes(order.status)) {
+    return NextResponse.json({ error: "Cancel or complete the order before deleting it" }, { status: 409 });
+  }
+  const { error } = await auth.supabase.from("orders").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "order.deleted", entity_type: "order", entity_id: id, before_data: order });
+  return NextResponse.json({ deleted: true, id });
+}
+
+/** Adds a returned order's units back to on_hand and writes the movement rows. */
+async function restockOrder(orderId: string) {
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (!isSupabaseConfigured || !supabaseUrl || !secret) return "service key missing";
+  const admin = createAdminClient(supabaseUrl, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: items, error } = await admin.from("order_items").select("variant_id,quantity").eq("order_id", orderId).not("variant_id", "is", null);
+  if (error) return error.message;
+  for (const item of items || []) {
+    const { data: row } = await admin.from("inventory").select("on_hand").eq("variant_id", item.variant_id).maybeSingle();
+    if (!row) continue;
+    const { error: updateError } = await admin.from("inventory").update({ on_hand: row.on_hand + item.quantity }).eq("variant_id", item.variant_id);
+    if (updateError) return updateError.message;
+    await admin.from("inventory_movements").insert({ variant_id: item.variant_id, movement_type: "return", quantity_delta: item.quantity, reference_type: "order", reference_id: orderId, reason: "Returned by customer" });
+  }
+  return null;
 }
