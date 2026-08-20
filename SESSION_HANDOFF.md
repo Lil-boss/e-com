@@ -1,6 +1,6 @@
 # Torun Mart — Session Handoff
 
-Last updated: 20 August 2026
+Last updated: 20 August 2026 (catalogue + design pass)
 
 ## How to resume in a new session
 
@@ -48,6 +48,8 @@ The production build currently passes. `next.config.ts` limits build workers to 
 ## Implemented storefront
 
 - Homepage with responsive navigation, hero slider, categories, product cards, seasonal campaign, reviews, footer, and cart drawer.
+- Catalogue route: `/products` — search (`?q=`), category filter (`?category=<slug>`)
+  and wishlist filter (`?liked=1`). Every homepage/nav/footer "browse" control points here.
 - Product-details route: `/product/[slug]`
 - Working image gallery and zoom lightbox.
 - Working cart quantities, removal, totals, and persistent local storage.
@@ -55,10 +57,15 @@ The production build currently passes. `next.config.ts` limits build workers to 
 - Checkout coupon field validates against Supabase before the order is placed.
 - Customer account page supports phone OTP login; signed-in customers see their real
   order history and manage saved addresses.
+- Shared storefront footer + mobile bottom nav: `components/site-footer.tsx`
+- Shared product card: `components/product-card.tsx`
+- Wishlist (localStorage, no account needed): `components/wishlist-provider.tsx`
+- Shared card mapping and demo fallbacks: `lib/storefront.ts` (`toCardProduct`, `bengali`, `DEMO_*`)
 - Shared storefront header: `components/site-header.tsx`
   - Used by homepage and product-details pages.
   - Contains dynamic company logo, search, account, wishlist, cart, category menu, mobile navigation, and tracking link.
-- Storefront data API: `app/api/storefront/route.ts`
+- Storefront data API: `app/api/storefront/route.ts` — accepts `?all=1&q=&category=`
+  for the catalogue; without `all` it still returns the 8 featured products.
 - Product details API: `app/api/products/[slug]/route.ts`
 - Saved company logo is loaded dynamically on the storefront and admin sidebar.
 - Supabase-disabled or unavailable states use polished demo fallback data.
@@ -152,6 +159,7 @@ Modules present:
 - Currency
 - Website
 - BIN and Mushak
+- Facebook page and Instagram profile URLs (drive the storefront footer socials)
 - Logo upload with immediate preview
 - Footer content
 - Saved name, tagline, address, phone, email, website, currency and footer text feed the
@@ -232,6 +240,22 @@ silently rejected and coupons were unreachable for every role.
 - Storefront content reads from Supabase but retains static fallbacks for resilience.
 - Uploaded logo URLs are stored in company settings and reused across storefront/admin.
 - Existing user files and unrelated workspace changes must be preserved.
+
+## Storefront controls
+
+Every homepage control resolves to a real destination. Deliberate exceptions:
+
+- The newsletter form acknowledges in the browser only; there is no subscriber table.
+  See the `ponytail:` note in `app/page.tsx`.
+- Footer links with no page behind them (প্রশ্নোত্তর, গোপনীয়তা, শর্তাবলি,
+  ডেলিভারি তথ্য, রিটার্ন ও রিফান্ড) were removed rather than left dead. The delivery
+  and return figures now render as text from the `delivery` store setting.
+- `শর্তাবলি` / `গোপনীয়তা নীতি` in `app/checkout/page.tsx` and `app/account/page.tsx`
+  are still `href="#"`; they need real content pages.
+- The announcement bar, campaign copy and hero/seasonal headings now read from
+  `store_settings.announcement`, `homepage_sections.seasonal` and `homepage_sections.hero`.
+  Only title/subtitle are editable in the admin content module; the JSON `content`
+  (slides, campaign price/image) still needs direct database edits.
 
 ## Known gaps and suggested next work
 
