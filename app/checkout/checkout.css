@@ -18,3 +18,16 @@
 .checkout-discount dd { color: #2f7a52; font-weight: 600; }
 .order-success .invoice-link { margin-right: 9px; border: 1px solid var(--co-line); background: #fff; color: var(--co-green); }
 .checkout-logo .brand-logo-image { max-width: 170px; height: 42px; }
+.payment-manual { margin: 14px 19px 4px; padding: 15px 17px; border: 1px solid var(--co-line); border-radius: 11px; background: #fafbf8; }
+.payment-manual > p { margin: 0 0 9px; font-size: 13px; }
+.payment-manual ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 9px; }
+.payment-manual li { display: flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid var(--co-line); border-radius: 9px; background: #fff; }
+.payment-manual li span { color: #6f7770; font-size: 12px; }
+.payment-manual li b { font-size: 15px; letter-spacing: .01em; }
+.payment-manual .payment-missing { color: #a34236; border-color: #f0d5d0; background: #fbe8e5; }
+.payment-amount { color: #46504a; }
+.payment-amount b { color: var(--co-green); font-size: 16px; }
+.payment-manual label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.payment-manual input { height: 46px; padding: 0 13px; border: 1px solid var(--co-line); border-radius: 9px; outline: 0; background: #fff; font: inherit; }
+.payment-manual input:focus { border-color: var(--co-leaf); box-shadow: 0 0 0 3px rgba(47,122,82,.1); }
+.payment-manual > small { display: block; margin-top: 8px; color: #7c847d; font-size: 11px; }

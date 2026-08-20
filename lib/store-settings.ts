@@ -6,6 +6,7 @@ export type StoreSettings = {
   name?: string; tagline?: string; address?: string; phone?: string; email?: string;
   currency?: string; website?: string; footer?: string; logo_url?: string;
   facebook?: string; instagram?: string; bin?: string; mushak?: string;
+  bkash_number?: string; nagad_number?: string;
 };
 
 export type DeliverySettings = {

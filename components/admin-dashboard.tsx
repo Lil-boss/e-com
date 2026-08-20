@@ -1839,6 +1839,8 @@ function SettingsModule({ configured }: { configured: boolean }) {
     website: "",
     facebook: "",
     instagram: "",
+    bkash_number: "",
+    nagad_number: "",
     bin: "",
     mushak: "",
     logo_url: "",
@@ -2003,6 +2005,22 @@ function SettingsModule({ configured }: { configured: boolean }) {
               value={settings.instagram}
               onChange={(e) => change("instagram", e.target.value)}
               placeholder="https://instagram.com/yourprofile"
+            />
+          </div>
+          <div className="company-setting-row">
+            <label>bKash number</label>
+            <input
+              value={settings.bkash_number}
+              onChange={(e) => change("bkash_number", e.target.value)}
+              placeholder="01XXXXXXXXX (shown at checkout)"
+            />
+          </div>
+          <div className="company-setting-row">
+            <label>Nagad number</label>
+            <input
+              value={settings.nagad_number}
+              onChange={(e) => change("nagad_number", e.target.value)}
+              placeholder="01XXXXXXXXX (shown at checkout)"
             />
           </div>
           <div className="company-setting-row">

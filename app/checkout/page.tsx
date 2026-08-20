@@ -49,7 +49,7 @@ export default function CheckoutPage() {
     let nextOrderNumber = "";
     let nextOrderId = "";
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, variantId: item.variantId, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, coupon_code: couponApplied || undefined, note: data.get("note") }) });
+      const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, variantId: item.variantId, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, payment_reference: data.get("payment_reference"), coupon_code: couponApplied || undefined, note: data.get("note") }) });
       const result = await response.json();
       // every failure is a failure: inventing an order number here silently lost orders
       if (!response.ok) throw new Error(result.error || "অর্ডার সম্পন্ন হয়নি");
@@ -90,7 +90,23 @@ export default function CheckoutPage() {
           <section className="checkout-card payment-card">
             <header><span>৩</span><div><h2>পেমেন্ট পদ্ধতি</h2><p>আপনার সুবিধামতো পেমেন্ট করুন</p></div></header>
             <div className="payment-options"><button type="button" className={payment === "cod" ? "active" : ""} onClick={() => setPayment("cod")}><i>{payment === "cod" && <Check />}</i><span className="payment-icon"><Banknote /></span><p><strong>ক্যাশ অন ডেলিভারি</strong><small>পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন</small></p></button><button type="button" className={payment === "mobile" ? "active" : ""} onClick={() => setPayment("mobile")}><i>{payment === "mobile" && <Check />}</i><span className="payment-icon"><Smartphone /></span><p><strong>মোবাইল ব্যাংকিং</strong><small>bKash, Nagad বা Rocket</small></p></button><button type="button" className={payment === "card" ? "active" : ""} onClick={() => setPayment("card")}><i>{payment === "card" && <Check />}</i><span className="payment-icon"><CreditCard /></span><p><strong>কার্ড পেমেন্ট</strong><small>Visa, Mastercard ও স্থানীয় কার্ড</small></p></button></div>
-            {payment !== "cod" && <div className="payment-note"><LockKeyhole /> পেমেন্ট গেটওয়ে সংযুক্ত হলে অর্ডার দেওয়ার পর নিরাপদ পেমেন্ট পাতায় নেওয়া হবে।</div>}
+            {payment === "mobile" && (
+              <div className="payment-manual">
+                <p><strong>যে নম্বরে পাঠাবেন</strong></p>
+                <ul>
+                  {store.bkash_number && <li><span>bKash</span><b>{store.bkash_number}</b></li>}
+                  {store.nagad_number && <li><span>Nagad</span><b>{store.nagad_number}</b></li>}
+                  {!store.bkash_number && !store.nagad_number && <li className="payment-missing">নম্বর এখনো যুক্ত করা হয়নি, অনুগ্রহ করে ক্যাশ অন ডেলিভারি বেছে নিন।</li>}
+                </ul>
+                <p className="payment-amount">পাঠানোর পরিমাণ <b>{money(total)}</b></p>
+                <label>
+                  <span>ট্রানজেকশন আইডি *</span>
+                  <input name="payment_reference" required placeholder="যেমন: 9F2K1LM3XZ" autoComplete="off" />
+                </label>
+                <small>আইডিটি যাচাই করে আমরা পেমেন্ট নিশ্চিত করব। ভুল আইডি দিলে অর্ডার বাতিল হতে পারে।</small>
+              </div>
+            )}
+            {payment === "card" && <div className="payment-note"><LockKeyhole /> কার্ড পেমেন্ট গেটওয়ে এখনো সংযুক্ত হয়নি। আপাতত ক্যাশ অন ডেলিভারি বা মোবাইল ব্যাংকিং বেছে নিন।</div>}
           </section>
 
           <section className="checkout-card note-card"><header><span>৪</span><div><h2>অর্ডার নোট <small>ঐচ্ছিক</small></h2><p>বিশেষ কোনো নির্দেশনা থাকলে জানান</p></div></header><textarea name="note" rows={3} placeholder="যেমন: বিকেল ৫টার পর ডেলিভারি করবেন" /></section>

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (auth.error) return auth.error;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Order id is required" }, { status: 400 });
-  const { data, error } = await auth.supabase.from("orders").select("*,order_items(*),order_status_events(from_status,to_status,note,created_at),shipments(id,courier,tracking_number,status,shipped_at)").eq("id", id).single();
+  const { data, error } = await auth.supabase.from("orders").select("*,order_items(*),order_status_events(from_status,to_status,note,created_at),shipments(id,courier,tracking_number,status,shipped_at),payments(method,provider,status,amount,provider_reference,created_at)").eq("id", id).single();
   return error ? NextResponse.json({ error: error.message }, { status: 404 }) : NextResponse.json({ ...data, next_statuses: transitions[data.status] || [] });
 }
 
@@ -48,6 +48,8 @@ export async function PATCH(request: NextRequest) {
   const changesOrder = Object.keys(updates).length > 0;
   if (!changesOrder && !body.shipment) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
 
+  // keep the ledger row in step with the order's payment summary
+  if (body.payment_status) await syncPaymentLedger(body.id, body.payment_status);
   const { data, error } = changesOrder
     ? await auth.supabase.from("orders").update(updates).eq("id", body.id).select().single()
     : await auth.supabase.from("orders").select().eq("id", body.id).single();
@@ -88,6 +90,14 @@ export async function DELETE(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "order.deleted", entity_type: "order", entity_id: id, before_data: order });
   return NextResponse.json({ deleted: true, id });
+}
+
+/** Mirrors the order's payment status onto its payments row. */
+async function syncPaymentLedger(orderId: string, status: string) {
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (!isSupabaseConfigured || !supabaseUrl || !secret) return;
+  const admin = createAdminClient(supabaseUrl, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  await admin.from("payments").update({ status, updated_at: new Date().toISOString() }).eq("order_id", orderId);
 }
 
 /** Adds a returned order's units back to on_hand and writes the movement rows. */

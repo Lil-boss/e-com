@@ -315,6 +315,7 @@ type OrderDetail = {
   order_items: Array<{ id: string; product_name: string; variant_name: string | null; sku: string; unit_price: number; quantity: number; line_total: number }>;
   order_status_events: Array<{ from_status: string | null; to_status: string; note: string | null; created_at: string }>;
   shipments: Array<{ id: string; courier: string | null; tracking_number: string | null; status: string }>;
+  payments?: Array<{ method: string; provider: string | null; status: string; amount: number; provider_reference: string | null }>;
 };
 
 export function OrderDetailModal({ orderId, configured, onClose, onUpdated, notify }: { orderId: string; configured: boolean; onClose: () => void; onUpdated: () => void; notify: (message: string) => void }) {
@@ -383,6 +384,7 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
                 <p>
                   <span className={`admin-status ${order.status}`}>{statusLabel[order.status] || order.status}</span>
                   <small>Payment: {paymentLabel[order.payment_status] || order.payment_status} · {order.payment_method.toUpperCase()}</small>
+                  {order.payments?.[0]?.provider_reference && <small className="payment-ref">Ref: {order.payments[0].provider_reference}</small>}
                   <small>{new Date(order.created_at).toLocaleString("en-GB")}</small>
                 </p>
               </article>

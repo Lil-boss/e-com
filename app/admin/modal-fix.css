@@ -341,3 +341,4 @@
 .admin-toolbar-clear svg { width: 15px; }
 .admin-toolbar-clear:disabled { opacity: .55; cursor: not-allowed; }
 .content-admin-grid textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--ad-line); border-radius: 7px; font: inherit; resize: vertical; }
+.payment-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #46504a !important; }

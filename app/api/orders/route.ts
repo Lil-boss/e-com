@@ -60,6 +60,18 @@ export async function POST(request: NextRequest) {
 
   await admin.from("order_status_events").insert({ order_id: order.id, to_status: "pending", note: "Order placed from storefront", customer_visible: true, created_by: customerId });
 
+  // The payments ledger records what the customer says they sent. Staff verify the
+  // reference and mark it paid; the order's payment_status stays the summary field.
+  const reference = String(body.payment_reference || "").trim().slice(0, 60);
+  await admin.from("payments").insert({
+    order_id: order.id,
+    method: order.payment_method,
+    provider: order.payment_method === "mobile" ? "mfs" : order.payment_method,
+    status: "pending",
+    amount: order.grand_total,
+    provider_reference: reference || null,
+  });
+
   // awaited but never fatal: an undelivered notice must not lose a paid-for order
   await notifyOrderPlaced({
     orderNumber: order.order_number,
