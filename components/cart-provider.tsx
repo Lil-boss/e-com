@@ -12,9 +12,13 @@ export type CartProduct = {
   image: string;
   variant: string;
   href?: string;
+  /** Chosen variant. Absent on legacy carts, which the order route resolves server-side. */
+  variantId?: string;
 };
 
-type CartItem = CartProduct & { quantity: number };
+/** Two variants of one product are two lines, so the line key carries the variant. */
+type CartItem = CartProduct & { quantity: number; key: string };
+const lineKey = (product: { id: string; variantId?: string }) => `${product.id}::${product.variantId || ""}`;
 
 type CartContextValue = {
   items: CartItem[];
@@ -22,8 +26,8 @@ type CartContextValue = {
   subtotal: number;
   isOpen: boolean;
   addItem: (product: CartProduct, quantity?: number) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -43,7 +47,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) setItems(JSON.parse(stored) as CartItem[]);
+      // carts saved before variants existed have no key, so backfill instead of dropping them
+      if (stored) setItems((JSON.parse(stored) as CartItem[]).map((item) => ({ ...item, key: item.key || lineKey(item) })));
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -60,18 +65,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [isOpen]);
 
   const addItem = (product: CartProduct, quantity = 1) => {
+    const key = lineKey(product);
     setItems((current) => {
-      const existing = current.find((item) => item.id === product.id);
-      if (existing) return current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item);
-      return [...current, { ...product, quantity }];
+      const existing = current.find((item) => item.key === key);
+      if (existing) return current.map((item) => item.key === key ? { ...item, quantity: item.quantity + quantity } : item);
+      return [...current, { ...product, quantity, key }];
     });
     setNotice(`${product.name} কার্টে যোগ হয়েছে`);
     setIsOpen(true);
     window.setTimeout(() => setNotice(""), 2500);
   };
 
-  const removeItem = (id: string) => setItems((current) => current.filter((item) => item.id !== id));
-  const updateQuantity = (id: string, quantity: number) => quantity < 1 ? removeItem(id) : setItems((current) => current.map((item) => item.id === id ? { ...item, quantity } : item));
+  const removeItem = (key: string) => setItems((current) => current.filter((item) => item.key !== key));
+  const updateQuantity = (key: string, quantity: number) => quantity < 1 ? removeItem(key) : setItems((current) => current.map((item) => item.key === key ? { ...item, quantity } : item));
   const count = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const value = { items, count, subtotal, isOpen, addItem, removeItem, updateQuantity, clearCart: () => setItems([]), openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false) };
@@ -87,7 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           <div className="cart-empty"><span><ShoppingBag /></span><h3>আপনার কার্ট এখনো খালি</h3><p>পছন্দের পণ্যগুলো কার্টে যোগ করলে এখানে দেখতে পাবেন।</p><button onClick={() => setIsOpen(false)}>কেনাকাটা শুরু করুন <ChevronRight /></button></div>
         ) : (
           <>
-            <div className="cart-items">{items.map((item) => <article key={item.id}><Link href={item.href || "#"} onClick={() => setIsOpen(false)}><Image src={item.image} alt={item.name} fill sizes="90px" /></Link><div className="cart-item-info"><div><p>{item.variant}</p><h3>{item.name}</h3></div><div className="cart-item-bottom"><div className="cart-quantity"><button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="পরিমাণ কমান"><Minus /></button><strong>{item.quantity.toLocaleString("bn-BD")}</strong><button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div><strong>{money(item.price * item.quantity)}</strong></div></div><button className="cart-remove" onClick={() => removeItem(item.id)} aria-label={`${item.name} সরান`}><Trash2 /></button></article>)}</div>
+            <div className="cart-items">{items.map((item) => <article key={item.key}><Link href={item.href || "#"} onClick={() => setIsOpen(false)}><Image src={item.image} alt={item.name} fill sizes="90px" /></Link><div className="cart-item-info"><div><p>{item.variant}</p><h3>{item.name}</h3></div><div className="cart-item-bottom"><div className="cart-quantity"><button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="পরিমাণ কমান"><Minus /></button><strong>{item.quantity.toLocaleString("bn-BD")}</strong><button onClick={() => updateQuantity(item.key, item.quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div><strong>{money(item.price * item.quantity)}</strong></div></div><button className="cart-remove" onClick={() => removeItem(item.key)} aria-label={`${item.name} সরান`}><Trash2 /></button></article>)}</div>
             <div className="cart-summary"><div><span>সাবটোটাল</span><strong>{money(subtotal)}</strong></div><p>ডেলিভারি চার্জ ঠিকানা দেওয়ার পর যোগ হবে।</p><Link className="checkout-button" href="/checkout" onClick={() => setIsOpen(false)}>চেকআউট করুন <span>{money(subtotal)}</span></Link><button className="continue-button" onClick={() => setIsOpen(false)}>কেনাকাটা চালিয়ে যান</button><small>নিরাপদ চেকআউট · ক্যাশ অন ডেলিভারি</small></div>
           </>
         )}

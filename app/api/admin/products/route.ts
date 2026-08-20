@@ -54,7 +54,10 @@ export async function PATCH(request: NextRequest) {
   for (const key of ["compare_at_price", "weight_grams", "uom_value", "discount"]) if (safeUpdates[key] === "") safeUpdates[key] = null;
   for (const key of ["category_id", "uom", "upc_no", "ean_no", "isbn_no", "part_no", "short_description", "description"]) if (safeUpdates[key] === "") safeUpdates[key] = null;
   const { data: before } = await auth.supabase.from("products").select().eq("id", id).single();
-  const { data, error } = await auth.supabase.from("products").update(safeUpdates).eq("id", id).select().single();
+  // a variant-only PATCH has no product columns to write, and an empty update matches no row
+  const { data, error } = Object.keys(safeUpdates).length
+    ? await auth.supabase.from("products").update(safeUpdates).eq("id", id).select().single()
+    : await auth.supabase.from("products").select().eq("id", id).single();
   if (!error && Object.prototype.hasOwnProperty.call(body, "image_paths")) {
     const imagePaths = String(body.image_paths || "").split(/[\n,]/).map((path) => path.trim()).filter(Boolean);
     await auth.supabase.from("product_media").delete().eq("product_id", id);
@@ -109,7 +112,17 @@ async function syncVariants(supabase: Awaited<ReturnType<typeof createClient>>, 
   const removed = (existing || []).filter((variant) => !keptIds.includes(variant.id));
   const busy = removed.find((variant) => ((variant.inventory as { reserved?: number } | null)?.reserved || 0) > 0);
   if (busy) return `Variant "${busy.title}" has open orders against it and cannot be deleted`;
-  if (removed.length) await supabase.from("product_variants").delete().in("id", removed.map((variant) => variant.id));
+  if (removed.length) {
+    const ids = removed.map((variant) => variant.id);
+    const { error: deleteError } = await supabase.from("product_variants").delete().in("id", ids);
+    // inventory_movements holds a permanent reference, so a variant with stock history
+    // cannot be dropped without losing the ledger. Retire it instead; the storefront
+    // only ever renders active variants.
+    if (deleteError) {
+      const { error: retireError } = await supabase.from("product_variants").update({ is_active: false }).in("id", ids);
+      if (retireError) return retireError.message;
+    }
+  }
   return null;
 }
 

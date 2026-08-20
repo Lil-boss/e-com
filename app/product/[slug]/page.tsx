@@ -61,6 +61,8 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [gallery, setGallery] = useState(fallbackGallery);
   const [productInfo, setProductInfo] = useState({ id: "black-seed-honey-500g", name: "কালোজিরা ফুলের প্রিমিয়াম মধু", nameEn: "Black Seed Flower Honey", sku: "TM-HNY-500", category: "খাঁটি খাবার · মধু", description: "কালোজিরা ফুল থেকে মৌমাছির সংগ্রহ করা গাঢ় রঙের, তীব্র স্বাদ ও অনন্য ঘ্রাণের প্রাকৃতিক মধু। ছোট ব্যাচে সংগ্রহ করায় থাকে প্রকৃতির আসল স্বাদ।", price: 645, compareAtPrice: 745, weight: 500, stock: 20 });
+  const [variants, setVariants] = useState<Array<{ id: string; title: string; price: number; stock: number | null }>>([]);
+  const [variantId, setVariantId] = useState("");
   const [dynamicRelated, setDynamicRelated] = useState(fallbackRelated);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -80,11 +82,16 @@ export default function ProductDetailPage() {
     const loadProduct = async () => {
       try {
         const response = await fetch(`/api/products/${params.slug}`);
-        const data = await response.json() as { configured?: boolean; product?: { id:string;name_bn:string;name_en?:string;slug:string;sku:string;short_description?:string;description?:string;base_price:number;compare_at_price?:number;weight_grams?:number;categories?:{name_bn?:string};product_media?:Array<{storage_path:string;sort_order:number}>;product_variants?:Array<{inventory?:{on_hand?:number}}> }; related?:Array<{id:string;name_bn:string;slug:string;base_price:number;compare_at_price?:number;weight_grams?:number;product_media?:Array<{storage_path:string}>}> };
+        const data = await response.json() as { configured?: boolean; product?: { id:string;name_bn:string;name_en?:string;slug:string;sku:string;short_description?:string;description?:string;base_price:number;compare_at_price?:number;weight_grams?:number;categories?:{name_bn?:string};product_media?:Array<{storage_path:string;sort_order:number}>;product_variants?:Array<{id:string;title:string;price:number;is_active:boolean;inventory?:{on_hand?:number}}> }; related?:Array<{id:string;name_bn:string;slug:string;base_price:number;compare_at_price?:number;weight_grams?:number;product_media?:Array<{storage_path:string}>}> };
         if (!response.ok || !data.configured || !data.product) return;
         const product = data.product;
         const media = [...(product.product_media || [])].sort((a,b) => a.sort_order - b.sort_order).map((item) => item.storage_path);
         if (media.length) { setGallery(media); setActiveImage(0); }
+        const active = (product.product_variants || []).filter((row) => row.is_active);
+        // inventory is not readable anonymously, so unknown stock counts as available
+        // and reserve_order_stock stays the authority at checkout
+        setVariants(active.map((row) => ({ id: row.id, title: row.title, price: Number(row.price ?? product.base_price), stock: row.inventory ? Number(row.inventory.on_hand || 0) : null })));
+        setVariantId(active[0]?.id || "");
         setProductInfo({ id: product.slug, name: product.name_bn, nameEn: product.name_en || "", sku: product.sku, category: product.categories?.name_bn || "পণ্য", description: product.short_description || product.description || "", price: Number(product.base_price), compareAtPrice: Number(product.compare_at_price || 0), weight: Number(product.weight_grams || 0), stock: Number(product.product_variants?.[0]?.inventory?.on_hand || 0) });
         if (data.related?.length) setDynamicRelated(data.related.map((item) => ({ id:item.slug,name:item.name_bn,meta:item.weight_grams?`${item.weight_grams.toLocaleString("bn-BD")} গ্রাম`:"পণ্য",price:`৳${Number(item.base_price).toLocaleString("bn-BD")}`,numericPrice:Number(item.base_price),old:item.compare_at_price?`৳${Number(item.compare_at_price).toLocaleString("bn-BD")}`:"",image:item.product_media?.[0]?.storage_path||fallbackGallery[0] })));
       } catch { /* Keep the seeded design fallback during setup. */ }
@@ -109,12 +116,16 @@ export default function ProductDetailPage() {
     };
   }, [zoomOpen]);
 
-  const discountPercent = productInfo.compareAtPrice > productInfo.price
-    ? Math.round((1 - productInfo.price / productInfo.compareAtPrice) * 100)
+  const selectedVariant = variants.find((row) => row.id === variantId) || variants[0];
+  const unitPrice = selectedVariant?.price ?? productInfo.price;
+  const soldOut = (stock: number | null) => stock !== null && stock <= 0;
+  const inStock = selectedVariant ? !soldOut(selectedVariant.stock) : productInfo.stock > 0;
+  const discountPercent = productInfo.compareAtPrice > unitPrice
+    ? Math.round((1 - unitPrice / productInfo.compareAtPrice) * 100)
     : 0;
 
   const addProductToCart = () => {
-    addItem({ id: productInfo.id, name: productInfo.name, price: productInfo.price, image: gallery[0], variant: productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : productInfo.sku, href: `/product/${productInfo.id}` }, quantity);
+    addItem({ id: productInfo.id, name: productInfo.name, price: unitPrice, image: gallery[0], variant: selectedVariant?.title || (productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : productInfo.sku), href: `/product/${productInfo.id}`, variantId: selectedVariant?.id }, quantity);
     setAdded(true);
   };
 
@@ -152,19 +163,19 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="product-summary">
-          <div className="summary-topline"><span className="stock"><i /> স্টকে আছে</span><div><button onClick={() => wishlist.toggle(productInfo.id)} aria-pressed={liked} className={liked ? "liked" : ""}><Heart fill={liked ? "currentColor" : "none"} /> পছন্দ</button><button><Share2 /> শেয়ার</button></div></div>
+          <div className="summary-topline"><span className={`stock ${inStock ? "" : "out"}`}><i /> {inStock ? "স্টকে আছে" : "স্টক শেষ"}</span><div><button onClick={() => wishlist.toggle(productInfo.id)} aria-pressed={liked} className={liked ? "liked" : ""}><Heart fill={liked ? "currentColor" : "none"} /> পছন্দ</button><button><Share2 /> শেয়ার</button></div></div>
           <p className="product-category">{productInfo.category}</p>
           <h1>{productInfo.name}</h1>
           <div className="review-line"><div className="pd-stars">★★★★★</div><strong>৪.৯</strong><a href="#reviews">রিভিউ দেখুন</a><span>SKU: {productInfo.sku}</span></div>
           <p className="intro">{productInfo.description}</p>
 
-          <div className="price-block"><div><strong>৳{productInfo.price.toLocaleString("bn-BD")}</strong>{productInfo.compareAtPrice > productInfo.price && <><del>৳{productInfo.compareAtPrice.toLocaleString("bn-BD")}</del><span>আপনি বাঁচাচ্ছেন ৳{(productInfo.compareAtPrice - productInfo.price).toLocaleString("bn-BD")}</span></>}</div><small>মূল্য ভ্যাটসহ</small></div>
+          <div className="price-block"><div><strong>৳{unitPrice.toLocaleString("bn-BD")}</strong>{productInfo.compareAtPrice > unitPrice && <><del>৳{productInfo.compareAtPrice.toLocaleString("bn-BD")}</del><span>আপনি বাঁচাচ্ছেন ৳{(productInfo.compareAtPrice - unitPrice).toLocaleString("bn-BD")}</span></>}</div><small>মূল্য ভ্যাটসহ</small></div>
 
-          <div className="size-block"><div><strong>পণ্যের পরিমাণ</strong><a href="#details">পণ্যের তথ্য</a></div><div className="size-options"><button className="active"><Check /> {productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : "স্ট্যান্ডার্ড"} <b>৳{productInfo.price.toLocaleString("bn-BD")}</b></button></div></div>
+          <div className="size-block"><div><strong>{variants.length > 1 ? "ভ্যারিয়েন্ট বেছে নিন" : "পণ্যের পরিমাণ"}</strong><a href="#details">পণ্যের তথ্য</a></div><div className="size-options">{(variants.length ? variants : [{ id: "", title: productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : "স্ট্যান্ডার্ড", price: productInfo.price, stock: productInfo.stock }]).map((row) => <button key={row.id || row.title} type="button" className={`${(selectedVariant?.id || "") === row.id ? "active" : ""} ${soldOut(row.stock) ? "sold-out" : ""}`} disabled={soldOut(row.stock)} aria-pressed={(selectedVariant?.id || "") === row.id} onClick={() => setVariantId(row.id)}>{(selectedVariant?.id || "") === row.id && <Check />} {row.title} <b>৳{row.price.toLocaleString("bn-BD")}</b>{soldOut(row.stock) && <small>স্টক শেষ</small>}</button>)}</div></div>
 
           <div className="purchase-row">
             <div className="quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="পরিমাণ কমান"><Minus /></button><strong>{quantity}</strong><button onClick={() => setQuantity(quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div>
-            <button className={`cart-cta ${added ? "added" : ""}`} onClick={addProductToCart}>{added ? <><PackageCheck /> কার্টে যোগ হয়েছে</> : <><ShoppingBag /> কার্টে যোগ করুন <span>· ৳{(productInfo.price * quantity).toLocaleString("bn-BD")}</span></>}</button>
+            <button className={`cart-cta ${added ? "added" : ""}`} onClick={addProductToCart}>{added ? <><PackageCheck /> কার্টে যোগ হয়েছে</> : <><ShoppingBag /> কার্টে যোগ করুন <span>· ৳{(unitPrice * quantity).toLocaleString("bn-BD")}</span></>}</button>
           </div>
           <button className="buy-now" onClick={() => { addProductToCart(); closeCart(); router.push("/checkout"); }}>এখনই কিনুন <ArrowRight /></button>
 
@@ -204,7 +215,7 @@ export default function ProductDetailPage() {
         <div className="lightbox-thumbs" onClick={(event) => event.stopPropagation()}>{gallery.map((image, index) => <button className={activeImage === index ? "active" : ""} onClick={() => setActiveImage(index)} key={image}><Image src={image} alt="" fill sizes="60px" /></button>)}</div>
       </div>}
 
-      <div className="mobile-cart"><div><small>মোট মূল্য</small><strong>৳{(productInfo.price * quantity).toLocaleString("bn-BD")}</strong></div><button onClick={addProductToCart}>{added ? <PackageCheck /> : <ShoppingBag />}{added ? "কার্টে যোগ হয়েছে" : "কার্টে যোগ করুন"}</button></div>
+      <div className="mobile-cart"><div><small>মোট মূল্য</small><strong>৳{(unitPrice * quantity).toLocaleString("bn-BD")}</strong></div><button onClick={addProductToCart}>{added ? <PackageCheck /> : <ShoppingBag />}{added ? "কার্টে যোগ হয়েছে" : "কার্টে যোগ করুন"}</button></div>
     </main>
   );
 }

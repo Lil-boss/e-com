@@ -47,3 +47,7 @@
 .pd-loading { padding: 130px 0; text-align: center; color: #788078; }
 .related-image > a { position: absolute; inset: 0; display: block; }
 .related-grid h3 a:hover { color: var(--pd-green); }
+.size-options button.sold-out { opacity: .5; cursor: not-allowed; text-decoration: line-through; }
+.size-options button small { margin-left: 6px; text-decoration: none; font-size: 10px; }
+.summary-topline .stock.out { color: #b44535; }
+.summary-topline .stock.out i { background: #b44535; }
