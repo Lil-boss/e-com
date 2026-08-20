@@ -46,6 +46,7 @@ import {
   ReviewsModule,
   bn,
   money,
+  paymentLabel,
   statusLabel,
 } from "./admin-modules";
 
@@ -87,6 +88,9 @@ export type Product = {
   part_no?: string | null;
   price_includes_vat?: boolean | null;
 };
+/** Orders that never became money, excluded from every revenue total. */
+const VOID_STATUSES = ["cancelled", "returned", "refunded"];
+
 export type Order = {
   id: string;
   order_number: string;
@@ -94,10 +98,15 @@ export type Order = {
   customer_phone: string;
   status: string;
   payment_status: string;
+  payment_method?: string;
+  coupon_code?: string | null;
   grand_total: number;
   created_at: string;
   district: string;
+  area?: string;
   items: number;
+  courier?: string;
+  tracking_number?: string;
 };
 export type InventoryRow = {
   variant_id: string;
@@ -329,7 +338,8 @@ export function AdminDashboard({
     );
     setProductModal(true);
   };
-  const revenue = orders.reduce((sum, o) => sum + o.grand_total, 0);
+  // cancelled and refunded orders were inflating the revenue tile
+  const revenue = orders.filter((o) => !VOID_STATUSES.includes(o.status)).reduce((sum, o) => sum + o.grand_total, 0);
   const pending = orders.filter((o) => o.status === "pending").length;
   const lowStock = products.filter((p) => p.stock <= 5).length;
   return (
@@ -968,15 +978,20 @@ function Dashboard({
   );
 }
 function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: Order) => void }) {
+  const when = (value: string) => {
+    const date = new Date(value);
+    return `${date.toLocaleDateString("bn-BD")} · ${date.toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" })}`;
+  };
   return (
     <div className="admin-table-wrap">
-      <table>
+      <table className="order-table">
         <thead>
           <tr>
             <th>অর্ডার</th>
             <th>ক্রেতা</th>
             <th>স্ট্যাটাস</th>
-            <th>এলাকা</th>
+            <th>পেমেন্ট</th>
+            <th>ডেলিভারি</th>
             <th>মোট</th>
             <th />
           </tr>
@@ -984,16 +999,14 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
         <tbody>
           {!orders.length && (
             <tr>
-              <td colSpan={6}>কোনো অর্ডার পাওয়া যায়নি</td>
+              <td colSpan={7}>কোনো অর্ডার পাওয়া যায়নি</td>
             </tr>
           )}
           {orders.map((o) => (
             <tr key={o.id}>
               <td>
                 <strong>#{o.order_number}</strong>
-                <small>
-                  {new Date(o.created_at).toLocaleDateString("bn-BD")}
-                </small>
+                <small>{when(o.created_at)}</small>
               </td>
               <td>
                 <strong>{o.customer_name}</strong>
@@ -1004,10 +1017,26 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
                   {statusLabel[o.status] || o.status}
                 </span>
               </td>
-              <td>{o.district}</td>
+              <td>
+                <span className={`admin-status ${o.payment_status}`}>
+                  {paymentLabel[o.payment_status] || o.payment_status}
+                </span>
+                {o.payment_method && <small>{o.payment_method.toUpperCase()}</small>}
+              </td>
+              <td>
+                <strong>{o.district}</strong>
+                <small>
+                  {o.courier
+                    ? `${o.courier}${o.tracking_number ? ` · ${o.tracking_number}` : ""}`
+                    : "কুরিয়ার বাকি"}
+                </small>
+              </td>
               <td>
                 <strong>{money(o.grand_total)}</strong>
-                <small>{bn(o.items)}টি পণ্য</small>
+                <small>
+                  {bn(o.items)}টি পণ্য
+                  {o.coupon_code ? ` · ${o.coupon_code}` : ""}
+                </small>
               </td>
               <td>
                 {onSelect && (
@@ -1577,7 +1606,7 @@ function Reports({
           <p>
             <span>অর্ডার মূল্য</span>
             <strong>
-              {money(orders.reduce((s, o) => s + o.grand_total, 0))}
+              {money(orders.filter((o) => !VOID_STATUSES.includes(o.status)).reduce((s, o) => s + o.grand_total, 0))}
             </strong>
             <small>{orders.length}টি অর্ডার</small>
           </p>

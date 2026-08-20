@@ -16,9 +16,9 @@ const demoProducts = [
   { id:"4",name_bn:"সরিষার তেল — ফ্যামিলি প্যাক",sku:"TM-OIL-5L",base_price:1300,status:"draft",is_featured:false,stock:25,image:"https://torunmart.com/wp-content/uploads/2025/09/1000131497-500x750.png",category:"খাঁটি খাবার" },
 ];
 const demoOrders = [
-  { id:"1",order_number:"TM-2847163",customer_name:"আব্দুর রহিম",customer_phone:"01886494257",status:"pending",payment_status:"pending",grand_total:1435,created_at:"2026-08-18T05:40:00Z",district:"ঢাকা",items:2 },
-  { id:"2",order_number:"TM-2847159",customer_name:"আসমা আক্তার",customer_phone:"01700123456",status:"confirmed",payment_status:"pending",grand_total:1790,created_at:"2026-08-18T04:15:00Z",district:"চট্টগ্রাম",items:1 },
-  { id:"3",order_number:"TM-2847102",customer_name:"তৌফিক আহমেদ",customer_phone:"01900123456",status:"shipped",payment_status:"paid",grand_total:2380,created_at:"2026-08-17T16:30:00Z",district:"রাজশাহী",items:3 },
+  { id:"1",order_number:"TM-2847163",customer_name:"আব্দুর রহিম",customer_phone:"01886494257",status:"pending",payment_status:"pending",payment_method:"cod",grand_total:1435,created_at:"2026-08-18T05:40:00Z",district:"ঢাকা",items:2 },
+  { id:"2",order_number:"TM-2847159",customer_name:"আসমা আক্তার",customer_phone:"01700123456",status:"confirmed",payment_status:"authorized",payment_method:"bkash",grand_total:1790,created_at:"2026-08-18T04:15:00Z",district:"চট্টগ্রাম",items:1 },
+  { id:"3",order_number:"TM-2847102",customer_name:"তৌফিক আহমেদ",customer_phone:"01900123456",status:"shipped",payment_status:"paid",payment_method:"cod",grand_total:2380,created_at:"2026-08-17T16:30:00Z",district:"রাজশাহী",items:3 },
 ];
 
 export default async function AdminPage() {
@@ -39,7 +39,7 @@ export default async function AdminPage() {
   if (!staff?.is_active) redirect("/admin/login?error=forbidden");
   const [productsResult, ordersResult, categoriesResult, sectionsResult, storeResult] = await Promise.all([
     supabase.from("products").select("*,product_media(storage_path,sort_order),categories(name_bn),product_variants(id,sku,title,price,attributes,inventory(on_hand,reserved,low_stock_threshold))").order("created_at",{ascending:false}),
-    supabase.from("orders").select("id,order_number,customer_name,customer_phone,status,payment_status,grand_total,created_at,district,order_items(count)").order("created_at",{ascending:false}).limit(50),
+    supabase.from("orders").select("id,order_number,customer_name,customer_phone,status,payment_status,payment_method,coupon_code,grand_total,created_at,district,area,order_items(count),shipments(courier,tracking_number)").order("created_at",{ascending:false}).limit(50),
     supabase.from("categories").select("id,name_bn,slug,is_active,show_on_home,sort_order").order("sort_order"),
     supabase.from("homepage_sections").select("section_key,section_type,title,subtitle,content,is_active,sort_order").order("sort_order"),
     supabase.from("store_settings").select("value").eq("key","store").maybeSingle(),
@@ -58,7 +58,10 @@ export default async function AdminPage() {
       low_stock_threshold: variant.inventory?.low_stock_threshold ?? 5,
     }));
   });
-  const orders = (ordersResult.data || []).map((o: Record<string,unknown>) => ({ ...o, items: (o.order_items as Array<{count?:number}>)?.[0]?.count || 0 })) as unknown as Order[];
+  const orders = (ordersResult.data || []).map((o: Record<string,unknown>) => {
+    const shipment = (o.shipments as Array<{courier?:string;tracking_number?:string}>)?.[0];
+    return { ...o, items: (o.order_items as Array<{count?:number}>)?.[0]?.count || 0, courier: shipment?.courier || "", tracking_number: shipment?.tracking_number || "" };
+  }) as unknown as Order[];
   const storeValue = (storeResult.data?.value || {}) as Record<string, unknown>;
   return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} variants={variants} logoUrl={String(storeValue.logo_url || "")} />;
 }

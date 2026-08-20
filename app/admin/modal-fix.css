@@ -309,3 +309,14 @@
 .content-toggle > i.on::after {
   left: 16px;
 }
+
+/* payment states borrowed the status pill but had no colours of their own */
+.admin-status.paid { background: #e7f4ea; color: #287147; }
+.admin-status.authorized { background: #e8f1fb; color: #3b6c9a; }
+.admin-status.failed { background: #fbe8e5; color: #a34236; }
+.admin-status.refunded, .admin-status.partially_refunded { background: #f1eef8; color: #5f4e93; }
+.order-table th, .order-table td { white-space: nowrap; }
+.order-table td small { color: #8a918b; }
+/* the dashboard panel is half-width: courier detail belongs on the orders page */
+.admin-dashboard-grid .order-table th:nth-child(5),
+.admin-dashboard-grid .order-table td:nth-child(5) { display: none; }
