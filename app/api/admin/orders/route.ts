@@ -24,7 +24,11 @@ export async function PATCH(request: NextRequest) {
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   if (body.shipment) {
-    const { error } = await auth.supabase.from("shipments").upsert({ order_id: body.id, courier: body.shipment.courier || null, tracking_number: body.shipment.tracking_number || null, status: body.shipment.status || "pending", shipped_at: body.shipment.status === "shipped" ? new Date().toISOString() : null }, { onConflict: "order_id" });
+    // shipped_at is only written when the parcel actually ships, so moving it on to
+    // delivered no longer wipes the timestamp it was set with.
+    const row: Record<string, unknown> = { order_id: body.id, courier: body.shipment.courier || null, tracking_number: body.shipment.tracking_number || null, status: body.shipment.status || "pending" };
+    if (body.shipment.status === "shipped") row.shipped_at = new Date().toISOString();
+    const { error } = await auth.supabase.from("shipments").upsert(row, { onConflict: "order_id" });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
@@ -38,9 +42,13 @@ export async function PATCH(request: NextRequest) {
     if (!transitions[order.status]?.includes(body.status)) return NextResponse.json({ error: "Invalid status transition" }, { status: 400 });
     updates.status = body.status;
   }
-  if (!Object.keys(updates).length) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  // saving courier details alone is a real change, it used to fall through to "Nothing to update"
+  const changesOrder = Object.keys(updates).length > 0;
+  if (!changesOrder && !body.shipment) return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
 
-  const { data, error } = await auth.supabase.from("orders").update(updates).eq("id", body.id).select().single();
+  const { data, error } = changesOrder
+    ? await auth.supabase.from("orders").update(updates).eq("id", body.id).select().single()
+    : await auth.supabase.from("orders").select().eq("id", body.id).single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   let stockWarning: string | null = null;
   if (updates.status) {
@@ -53,6 +61,6 @@ export async function PATCH(request: NextRequest) {
     }
     await auth.supabase.from("order_status_events").insert({ order_id: body.id, from_status: order.status, to_status: body.status, note: body.note || null, created_by: auth.userId });
   }
-  await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "order.updated", entity_type: "order", entity_id: body.id, before_data: order, after_data: updates });
+  await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: body.shipment && !changesOrder ? "order.shipment_updated" : "order.updated", entity_type: "order", entity_id: body.id, before_data: order, after_data: body.shipment && !changesOrder ? { shipment: body.shipment } : updates });
   return NextResponse.json(stockWarning ? { ...data, warning: stockWarning } : data);
 }
