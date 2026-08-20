@@ -39,8 +39,8 @@
 }
 
 .invoice-head { display: flex; justify-content: space-between; gap: 30px; padding-bottom: 24px; border-bottom: 2px solid var(--iv-green); }
-.invoice-brand { display: flex; align-items: flex-start; gap: 14px; }
-.invoice-brand img { width: auto; max-width: 170px; height: 52px; object-fit: contain; object-position: left top; }
+.invoice-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.invoice-brand img { width: auto; max-width: 200px; height: 56px; object-fit: contain; object-position: left top; }
 .invoice-mark { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: var(--iv-green); color: #fff; }
 .invoice-brand > div { display: flex; flex-direction: column; gap: 3px; }
 .invoice-brand strong { font-size: 19px; }

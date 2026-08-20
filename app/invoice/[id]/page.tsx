@@ -86,7 +86,8 @@ export default function InvoicePage() {
               ? <img src={store.logo_url} alt={store.name || "Torun Mart"} />
               : <span className="invoice-mark"><Leaf size={22} /></span>}
             <div>
-              <strong>{store.name || "তরুণ মার্ট"}</strong>
+              {/* the logo already carries the name, so only spell it out without one */}
+              {!store.logo_url && <strong>{store.name || "তরুণ মার্ট"}</strong>}
               {store.address && <small>{store.address}</small>}
               <small>
                 {[store.phone, store.email].filter(Boolean).join(" · ")}
