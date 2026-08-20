@@ -56,7 +56,7 @@ export function SiteFooter({ store, delivery, categories }: { store: StoreSettin
           </div>
           <div>
             <h3>সহায়তা</h3>
-            <Link href="/account">অর্ডার ট্র্যাক করুন</Link>
+            <Link href="/track">অর্ডার ট্র্যাক করুন</Link>
             <Link href="/products?liked=1">পছন্দের তালিকা</Link>
             {delivery && <p className="footer-note">ঢাকায় {symbol}{bengali(Number(delivery.inside_dhaka || 0))} · {delivery.inside_days}<br />ঢাকার বাইরে {symbol}{bengali(Number(delivery.outside_dhaka || 0))} · {delivery.outside_days}<br />{bengali(Number(delivery.return_days || 7))} দিনের সহজ রিটার্ন</p>}
           </div>

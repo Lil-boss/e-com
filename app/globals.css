@@ -470,3 +470,20 @@ img { object-fit: cover; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Guest order lookup */
+.track-section { padding: 56px 0 90px; }
+.track-card { width: min(520px, 100%); margin: 0 auto; padding: 38px 34px; background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 18px 44px rgba(18,63,43,.07); text-align: center; }
+.track-icon { display: grid; place-items: center; width: 62px; height: 62px; margin: 0 auto 16px; border-radius: 50%; background: #edf5ee; color: var(--leaf); }
+.track-icon svg { width: 27px; height: 27px; }
+.track-card h1 { margin: 8px 0 10px; font-size: 32px; letter-spacing: -.03em; }
+.track-card > p { margin: 0 0 24px; color: var(--muted); line-height: 1.6; }
+.track-card form { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+.track-card label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.track-card input { height: 48px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; outline: 0; background: #fafbf8; font: inherit; }
+.track-card input:focus { border-color: var(--leaf); background: #fff; box-shadow: 0 0 0 3px rgba(47,122,82,.1); }
+.track-card button { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 10px; background: var(--forest); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.track-card button:disabled { opacity: .65; cursor: progress; }
+.track-error { padding: 11px 14px; border-radius: 9px; background: #fbe8e5; color: #a34236; font-size: 13px; }
+.track-card > small { display: block; margin-top: 16px; color: var(--muted); font-size: 12px; }
+@media (max-width: 620px) { .track-card { padding: 28px 20px; } .track-card h1 { font-size: 26px; } }

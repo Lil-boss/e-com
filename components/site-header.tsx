@@ -73,7 +73,7 @@ export function SiteHeader({ logoUrl, cartCount, cartSubtotal, onOpenCart, categ
             {categories.slice(0, 4).map((category) => <Link key={category.slug || category.name} href={categoryHref(category)} onClick={closeMenus}>{category.name}</Link>)}
             <Link className="sale-link" href="/products" onClick={closeMenus}>অফার</Link>
           </nav>
-          <Link className="track-link" href="/account" onClick={closeMenus}><Truck size={17} /> অর্ডার ট্র্যাক করুন</Link>
+          <Link className="track-link" href="/track" onClick={closeMenus}><Truck size={17} /> অর্ডার ট্র্যাক করুন</Link>
         </div>
       </div>
     </header>
