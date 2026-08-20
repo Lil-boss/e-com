@@ -1,6 +1,7 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateCoupon } from "@/lib/coupons";
+import { notifyOrderPlaced } from "@/lib/notifications";
 import { isSupabaseConfigured, supabaseUrl } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,6 +55,19 @@ export async function POST(request: NextRequest) {
   }
 
   await admin.from("order_status_events").insert({ order_id: order.id, to_status: "pending", note: "Order placed from storefront", customer_visible: true, created_by: customerId });
+
+  // awaited but never fatal: an undelivered notice must not lose a paid-for order
+  await notifyOrderPlaced({
+    orderNumber: order.order_number,
+    orderId: order.id,
+    customerName: order.customer_name,
+    customerPhone: order.customer_phone,
+    customerEmail: order.customer_email,
+    grandTotal: Number(order.grand_total),
+    itemCount: itemRows.reduce((sum, item) => sum + item.quantity, 0),
+    invoiceUrl: new URL(`/invoice/${order.id}`, request.nextUrl.origin).toString(),
+  });
+
   return NextResponse.json({ id: order.id, order_number: order.order_number, grand_total: order.grand_total, discount_total: discount }, { status: 201 });
 }
 
