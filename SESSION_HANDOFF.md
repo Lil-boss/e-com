@@ -1,6 +1,6 @@
 # Torun Mart — Session Handoff
 
-Last updated: 20 August 2026 (catalogue + design pass)
+Last updated: 21 August 2026 (gap-closing program)
 
 ## How to resume in a new session
 
@@ -271,6 +271,36 @@ Every homepage control resolves to a real destination. Deliberate exceptions:
   `store_settings.announcement`, `homepage_sections.seasonal` and `homepage_sections.hero`.
   Only title/subtitle are editable in the admin content module; the JSON `content`
   (slides, campaign price/image) still needs direct database edits.
+
+## Closed in the 21 August pass
+
+Storefront: variant selection end to end (cart lines are keyed product+variant,
+the order route prices from the chosen one) · order-placed notification via
+`ORDER_NOTIFY_WEBHOOK_URL` · guest order tracking at `/track` plus claim-by-phone
+at login · customer review submission · editable `/page/[slug]` info pages ·
+per-product metadata, sitemap.xml and robots.txt · reveal transitions and
+catalogue skeletons · newsletter signups reach the webhook.
+
+Admin: product image upload (`/api/admin/media`) and the project's storage host
+allowed for `next/image` · order deletion · restock on return · date-scoped
+reports with CSV export · hero slide and campaign JSON editing · manual mobile
+banking with a live `payments` ledger.
+
+Platform: rate limiting on the public write endpoints (`lib/rate-limit.ts`) ·
+checkout no longer invents an order number on a 503 · order pricing extracted to
+`lib/order-lines.ts` with tests (30 tests total).
+
+### Still open, needs you
+
+- `NOTUN10` is advertised in the announcement bar but no such coupon exists.
+  Create it in Promotions or change the banner text.
+- The four info pages ship with marked drafts; replace with real wording.
+- `ORDER_NOTIFY_WEBHOOK_URL` is unset, so order and newsletter notices only log.
+- `NEXT_PUBLIC_SITE_URL` must be set in production or canonicals point at localhost.
+- A real payment gateway needs merchant credentials; the `payments` ledger is the
+  seam it plugs into.
+- Storefront pages still fetch after hydration. Server-rendering the homepage,
+  catalogue and product pages is the remaining structural item.
 
 ## Known gaps and suggested next work
 

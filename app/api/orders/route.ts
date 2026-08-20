@@ -1,6 +1,7 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateCoupon } from "@/lib/coupons";
+import { buildOrderLines, shippingFor, type OrderProduct } from "@/lib/order-lines";
 import { throttle } from "@/lib/rate-limit";
 import { notifyOrderPlaced } from "@/lib/notifications";
 import { isSupabaseConfigured, supabaseUrl } from "@/lib/supabase/config";
@@ -21,22 +22,10 @@ export async function POST(request: NextRequest) {
   const slugs = body.items.map((item: { id: string }) => item.id);
   const { data: products, error: productError } = await admin.from("products").select("id,slug,sku,name_bn,base_price,status,product_media(storage_path,sort_order),product_variants(id,title,price,is_active)").in("slug", slugs).eq("status", "published");
   if (productError || !products || products.length !== slugs.length) return NextResponse.json({ error: "One or more products are unavailable" }, { status: 400 });
-  let unavailable = "";
-  const itemRows: Array<{ product_id: string; variant_id: string | null; product_name: string; variant_name: string | null; sku: string; image_path: string | null; unit_price: number; quantity: number; discount_total: number; line_total: number }> = body.items.map((cartItem: { id: string; variantId?: string; quantity: number }) => {
-    const product = products.find((candidate) => candidate.slug === cartItem.id)!;
-    const active = product.product_variants?.filter((candidate) => candidate.is_active) || [];
-    // an explicit choice must belong to this product and still be active; carts saved
-    // before variant selection existed have no id and fall back to the first active one
-    const chosen = cartItem.variantId ? active.find((candidate) => candidate.id === cartItem.variantId) : undefined;
-    if (cartItem.variantId && !chosen) unavailable = product.name_bn;
-    const variant = chosen || active[0] || product.product_variants?.[0];
-    const price = Number(variant?.price ?? product.base_price);
-    const quantity = Math.max(1, Math.min(20, Number(cartItem.quantity)));
-    return { product_id: product.id, variant_id: variant?.id || null, product_name: product.name_bn, variant_name: variant?.title || null, sku: product.sku, image_path: product.product_media?.[0]?.storage_path || null, unit_price: price, quantity, discount_total: 0, line_total: price * quantity };
-  });
+  const { rows: itemRows, subtotal, unavailable } = buildOrderLines(body.items, products as unknown as OrderProduct[]);
   if (unavailable) return NextResponse.json({ error: `"${unavailable}" পণ্যের নির্বাচিত ভ্যারিয়েন্টটি আর নেই, কার্ট থেকে আবার বেছে নিন` }, { status: 409 });
-  const subtotal = itemRows.reduce((sum, item) => sum + item.line_total, 0);
-  const shipping = body.delivery_area === "dhaka" ? 70 : 120;
+  if (!itemRows.length) return NextResponse.json({ error: "One or more products are unavailable" }, { status: 400 });
+  const shipping = shippingFor(String(body.delivery_area || ""));
 
   const coupon = await evaluateCoupon(admin, body.coupon_code, subtotal);
   if (coupon.error) return NextResponse.json({ error: coupon.error }, { status: 400 });
