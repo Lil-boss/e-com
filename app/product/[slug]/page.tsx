@@ -68,6 +68,7 @@ export default function ProductDetailPage() {
   const [postcode, setPostcode] = useState("");
   const [checkedDelivery, setCheckedDelivery] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [store, setStore] = useState<StoreSettings>({});
   const storeLogoUrl = store.logo_url || "";
   const whatsapp = store.phone ? `https://wa.me/${store.phone.replace(/\D/g, "")}` : "";
@@ -87,6 +88,7 @@ export default function ProductDetailPage() {
         setProductInfo({ id: product.slug, name: product.name_bn, nameEn: product.name_en || "", sku: product.sku, category: product.categories?.name_bn || "পণ্য", description: product.short_description || product.description || "", price: Number(product.base_price), compareAtPrice: Number(product.compare_at_price || 0), weight: Number(product.weight_grams || 0), stock: Number(product.product_variants?.[0]?.inventory?.on_hand || 0) });
         if (data.related?.length) setDynamicRelated(data.related.map((item) => ({ id:item.slug,name:item.name_bn,meta:item.weight_grams?`${item.weight_grams.toLocaleString("bn-BD")} গ্রাম`:"পণ্য",price:`৳${Number(item.base_price).toLocaleString("bn-BD")}`,numericPrice:Number(item.base_price),old:item.compare_at_price?`৳${Number(item.compare_at_price).toLocaleString("bn-BD")}`:"",image:item.product_media?.[0]?.storage_path||fallbackGallery[0] })));
       } catch { /* Keep the seeded design fallback during setup. */ }
+      finally { setLoaded(true); }
     };
     loadProduct();
     fetch("/api/storefront", { cache: "no-store" }).then(response => response.json()).then(data => { const store = data.settings?.find((setting: { key: string }) => setting.key === "store")?.value; if (store) setStore(store as StoreSettings); }).catch(() => undefined);
@@ -107,10 +109,23 @@ export default function ProductDetailPage() {
     };
   }, [zoomOpen]);
 
+  const discountPercent = productInfo.compareAtPrice > productInfo.price
+    ? Math.round((1 - productInfo.price / productInfo.compareAtPrice) * 100)
+    : 0;
+
   const addProductToCart = () => {
     addItem({ id: productInfo.id, name: productInfo.name, price: productInfo.price, image: gallery[0], variant: productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : productInfo.sku, href: `/product/${productInfo.id}` }, quantity);
     setAdded(true);
   };
+
+  if (!loaded) {
+    return (
+      <main className="product-page">
+        <SiteHeader logoUrl={storeLogoUrl} cartCount={count} cartSubtotal={subtotal} onOpenCart={openCart} />
+        <div className="pd-container pd-loading">পণ্য লোড হচ্ছে...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="product-page">
@@ -123,16 +138,16 @@ export default function ProductDetailPage() {
       <section className="pd-container product-overview">
         <div className="gallery">
           <div className="thumbs">
-            {gallery.map((image, index) => <button className={activeImage === index ? "active" : ""} onClick={() => setActiveImage(index)} key={image}><Image src={image} alt={`মধুর ছবি ${index + 1}`} fill sizes="80px" /></button>)}
+            {gallery.map((image, index) => <button className={activeImage === index ? "active" : ""} onClick={() => setActiveImage(index)} key={image}><Image src={image} alt={`${productInfo.name} — ছবি ${(index + 1).toLocaleString("bn-BD")}`} fill sizes="80px" /></button>)}
             <button className="video-thumb"><span>▶</span><small>ভিডিও</small></button>
           </div>
           <div className="main-image">
             <Image src={gallery[activeImage]} alt={productInfo.name} fill priority sizes="(max-width: 800px) 100vw, 50vw" />
-            <span className="sale-pill">১৩% ছাড়</span>
+            {discountPercent > 0 && <span className="sale-pill">{discountPercent.toLocaleString("bn-BD")}% ছাড়</span>}
             <button className="zoom" onClick={() => setZoomOpen(true)} aria-label="ছবি বড় করে দেখুন"><ZoomIn /></button>
             <div className="gallery-counter">{activeImage + 1} / {gallery.length}</div>
-            <button className="gallery-prev" onClick={() => setActiveImage((activeImage + gallery.length - 1) % gallery.length)} aria-label="আগের ছবি"><ChevronRight /></button>
-            <button className="gallery-next" onClick={() => setActiveImage((activeImage + 1) % gallery.length)} aria-label="পরের ছবি"><ChevronLeft /></button>
+            <button className="gallery-prev" onClick={() => setActiveImage((activeImage + gallery.length - 1) % gallery.length)} aria-label="আগের ছবি"><ChevronLeft /></button>
+            <button className="gallery-next" onClick={() => setActiveImage((activeImage + 1) % gallery.length)} aria-label="পরের ছবি"><ChevronRight /></button>
           </div>
         </div>
 
@@ -175,7 +190,7 @@ export default function ProductDetailPage() {
         {tab === "reviews" && <div className="simple-tab" id="reviews"><h2>ক্রেতাদের মতামত</h2><p>৩৮ জন যাচাইকৃত ক্রেতার গড় রেটিং ৪.৯/৫। স্বাদ, ঘ্রাণ এবং প্যাকেজিং নিয়ে ক্রেতারা সবচেয়ে বেশি সন্তুষ্ট।</p></div>}
       </section>
 
-      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /><button onClick={() => wishlist.toggle(item.id)} aria-pressed={wishlist.has(item.id)} aria-label={`${item.name} পছন্দের তালিকায়`}><Heart fill={wishlist.has(item.id) ? "currentColor" : "none"} /></button></div><p>{item.meta}</p><h3>{item.name}</h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
+      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Link href={`/product/${item.id}`} aria-label={`${item.name} বিস্তারিত দেখুন`}><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /></Link><button onClick={() => wishlist.toggle(item.id)} aria-pressed={wishlist.has(item.id)} aria-label={`${item.name} পছন্দের তালিকায়`}><Heart fill={wishlist.has(item.id) ? "currentColor" : "none"} /></button></div><p>{item.meta}</p><h3><Link href={`/product/${item.id}`}>{item.name}</Link></h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
 
       <section className="help-banner" id="help"><div className="pd-container"><div><span><MessageCircle /></span><p><strong>পণ্যটি নিয়ে কোনো প্রশ্ন আছে?</strong><small>আমাদের টিম আপনাকে সঠিক পণ্যটি বেছে নিতে সাহায্য করবে।</small></p></div>{whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer noopener">WhatsApp-এ কথা বলুন <ArrowRight /></a>}</div></section>
 
@@ -183,9 +198,9 @@ export default function ProductDetailPage() {
 
       {zoomOpen && <div className="product-lightbox" role="dialog" aria-modal="true" aria-label="পণ্যের বড় ছবি" onClick={() => setZoomOpen(false)}>
         <div className="lightbox-toolbar"><span>{activeImage + 1} / {gallery.length}</span><button onClick={() => setZoomOpen(false)} aria-label="বড় ছবি বন্ধ করুন"><X /></button></div>
-        <button className="lightbox-prev" onClick={(event) => { event.stopPropagation(); setActiveImage((activeImage + gallery.length - 1) % gallery.length); }} aria-label="আগের ছবি"><ChevronRight /></button>
+        <button className="lightbox-prev" onClick={(event) => { event.stopPropagation(); setActiveImage((activeImage + gallery.length - 1) % gallery.length); }} aria-label="আগের ছবি"><ChevronLeft /></button>
         <div className="lightbox-image" onClick={(event) => event.stopPropagation()}><Image src={gallery[activeImage]} alt={`${productInfo.name} — ছবি ${activeImage + 1}`} fill priority sizes="100vw" /></div>
-        <button className="lightbox-next" onClick={(event) => { event.stopPropagation(); setActiveImage((activeImage + 1) % gallery.length); }} aria-label="পরের ছবি"><ChevronLeft /></button>
+        <button className="lightbox-next" onClick={(event) => { event.stopPropagation(); setActiveImage((activeImage + 1) % gallery.length); }} aria-label="পরের ছবি"><ChevronRight /></button>
         <div className="lightbox-thumbs" onClick={(event) => event.stopPropagation()}>{gallery.map((image, index) => <button className={activeImage === index ? "active" : ""} onClick={() => setActiveImage(index)} key={image}><Image src={image} alt="" fill sizes="60px" /></button>)}</div>
       </div>}
 

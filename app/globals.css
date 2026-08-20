@@ -155,6 +155,8 @@ img { object-fit: cover; }
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .product-card { min-width: 0; }
 .product-image { aspect-ratio: 4/5; position: relative; border-radius: 15px; overflow: hidden; background: #f1f1ed; }
+/* the fill image is absolute, so the link needs its own box or the card is dead to clicks */
+.product-image > a { position: absolute; inset: 0; display: block; }
 .product-image img { transition: transform .45s ease; }
 .product-card:hover .product-image img { transform: scale(1.035); }
 .product-badge { position: absolute; left: 12px; top: 12px; background: rgba(255,255,255,.92); color: var(--forest); padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }

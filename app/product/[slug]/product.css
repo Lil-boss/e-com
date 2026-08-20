@@ -43,3 +43,7 @@
   .help-banner > div { min-height: 190px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 20px; }.help-banner strong { font-size: 18px; }.pd-footer-grid { grid-template-columns: 1fr 1fr; gap: 40px 25px; }.pd-footer-grid > div:first-child { grid-column: 1/3; }.pd-footer-grid > div:last-child { grid-column: 1/3; }.mobile-cart { position: fixed; z-index: 50; left: 0; right: 0; bottom: 0; height: 72px; padding: 9px 15px; display: grid; grid-template-columns: 85px 1fr; gap: 12px; background: rgba(255,255,255,.98); border-top: 1px solid var(--pd-line); box-shadow: 0 -8px 25px rgba(18,63,43,.1); }.mobile-cart > div { display: flex; flex-direction: column; justify-content: center; }.mobile-cart small { color: #7e867f; }.mobile-cart strong { color: var(--pd-green); font-size: 19px; }.mobile-cart button { border: 0; border-radius: 9px; background: var(--pd-green); color: #fff; display: flex; align-items: center; justify-content: center; gap: 9px; font-weight: 600; }.mobile-cart svg { width: 19px; }
   .lightbox-image { width: 100vw; height: 72vh; }.lightbox-prev,.lightbox-next { width: 42px; height: 42px; top: auto; bottom: 95px; }.lightbox-prev { left: 18px; }.lightbox-next { right: 18px; }.lightbox-toolbar { top: 14px; left: 15px; right: 15px; }.lightbox-thumbs { bottom: 18px; }.lightbox-thumbs button { width: 52px; height: 52px; }
 }
+
+.pd-loading { padding: 130px 0; text-align: center; color: #788078; }
+.related-image > a { position: absolute; inset: 0; display: block; }
+.related-grid h3 a:hover { color: var(--pd-green); }
