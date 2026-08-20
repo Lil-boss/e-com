@@ -58,6 +58,8 @@ export function SiteFooter({ store, delivery, categories }: { store: StoreSettin
             <h3>সহায়তা</h3>
             <Link href="/track">অর্ডার ট্র্যাক করুন</Link>
             <Link href="/products?liked=1">পছন্দের তালিকা</Link>
+            <Link href="/page/returns">রিটার্ন ও রিফান্ড</Link>
+            <Link href="/page/faq">প্রশ্নোত্তর</Link>
             {delivery && <p className="footer-note">ঢাকায় {symbol}{bengali(Number(delivery.inside_dhaka || 0))} · {delivery.inside_days}<br />ঢাকার বাইরে {symbol}{bengali(Number(delivery.outside_dhaka || 0))} · {delivery.outside_days}<br />{bengali(Number(delivery.return_days || 7))} দিনের সহজ রিটার্ন</p>}
           </div>
           <div>
@@ -69,6 +71,7 @@ export function SiteFooter({ store, delivery, categories }: { store: StoreSettin
         </div>
         <div className="container footer-bottom">
           <p>{store.footer || "© ২০২৬ তরুণ মার্ট। সর্বস্বত্ব সংরক্ষিত।"}</p>
+          <div><Link href="/page/privacy">গোপনীয়তা</Link><Link href="/page/terms">শর্তাবলি</Link></div>
           <span>নিরাপদ পেমেন্ট · ক্যাশ অন ডেলিভারি</span>
         </div>
       </footer>

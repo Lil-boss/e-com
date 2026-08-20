@@ -1,0 +1,6 @@
+.info-page { min-height: 100vh; padding: 44px 0 80px; background: #f7f7f3; color: #17211b; }
+.info-sheet { width: min(760px, 100%); margin: 0 auto; padding: 44px 46px; background: #fff; border: 1px solid var(--border, #e0e4de); border-radius: 16px; }
+.info-sheet h1 { margin: 0 0 22px; font-size: clamp(30px, 4vw, 42px); letter-spacing: -.035em; }
+.info-sheet p { margin: 0 0 18px; line-height: 1.85; color: #46504a; }
+.info-back { display: block; width: fit-content; margin: 26px auto 0; color: var(--forest, #123f2b); font-weight: 600; }
+@media (max-width: 700px) { .info-sheet { padding: 26px 20px; } }

@@ -3,20 +3,31 @@ import { OWNER, requireStaff } from "@/lib/supabase/admin-auth";
 
 const authorized = () => requireStaff(OWNER);
 
-export async function GET() {
+// Settings rows the admin may edit. "store" stays the default so existing calls keep working.
+const EDITABLE = ["store", "pages", "delivery", "announcement"];
+const settingsKey = (request: NextRequest) => {
+  const key = new URL(request.url).searchParams.get("key") || "store";
+  return EDITABLE.includes(key) ? key : null;
+};
+
+export async function GET(request: NextRequest) {
   const auth = await authorized();
   if (auth.error) return auth.error;
-  const { data, error } = await auth.supabase.from("store_settings").select("key,value").eq("key", "store").single();
+  const key = settingsKey(request);
+  if (!key) return NextResponse.json({ error: "Unknown settings key" }, { status: 400 });
+  const { data, error } = await auth.supabase.from("store_settings").select("key,value").eq("key", key).maybeSingle();
   return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json(data?.value || {});
 }
 
 export async function PATCH(request: NextRequest) {
   const auth = await authorized();
   if (auth.error) return auth.error;
+  const key = settingsKey(request);
+  if (!key) return NextResponse.json({ error: "Unknown settings key" }, { status: 400 });
   const value = await request.json();
-  const { data: before } = await auth.supabase.from("store_settings").select("value").eq("key", "store").maybeSingle();
-  const { data, error } = await auth.supabase.from("store_settings").upsert({ key: "store", value, is_public: true, updated_by: auth.userId }).select().single();
-  if (!error) await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "settings.updated", entity_type: "store_settings", entity_id: "store", before_data: before?.value || null, after_data: value });
+  const { data: before } = await auth.supabase.from("store_settings").select("value").eq("key", key).maybeSingle();
+  const { data, error } = await auth.supabase.from("store_settings").upsert({ key, value, is_public: true, updated_by: auth.userId }).select().single();
+  if (!error) await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "settings.updated", entity_type: "store_settings", entity_id: key, before_data: before?.value || null, after_data: value });
   return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json(data.value);
 }
 

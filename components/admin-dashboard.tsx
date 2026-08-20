@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { INFO_PAGE_DEFAULTS, INFO_PAGE_LABELS, INFO_PAGE_SLUGS, type InfoPages } from "@/lib/info-pages";
 import {
   Activity,
   AlertTriangle,
@@ -1572,6 +1573,76 @@ function Content({
             configured={configured}
             notify={notify}
           />
+        ))}
+      </div>
+      <InfoPagesEditor configured={configured} notify={notify} />
+    </>
+  );
+}
+
+/** Terms, privacy, returns and FAQ, stored together under the "pages" settings key. */
+function InfoPagesEditor({ configured, notify }: { configured: boolean; notify: (message: string) => void }) {
+  const [pages, setPages] = useState<InfoPages>(INFO_PAGE_DEFAULTS);
+  const [saving, setSaving] = useState("");
+
+  useEffect(() => {
+    if (!configured) return;
+    fetch("/api/admin/settings?key=pages")
+      .then((response) => response.json())
+      .then((saved: InfoPages) => {
+        if (saved && !("error" in saved)) {
+          setPages((current) => ({ ...current, ...Object.fromEntries(Object.entries(saved).filter(([, page]) => page?.body)) }));
+        }
+      })
+      .catch(() => undefined);
+  }, [configured]);
+
+  const save = async (slug: string) => {
+    if (!configured) { notify("Changes are not saved in preview mode"); return; }
+    setSaving(slug);
+    const response = await fetch("/api/admin/settings?key=pages", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(pages),
+    });
+    const result = await response.json().catch(() => ({}));
+    setSaving("");
+    notify(response.ok ? `${INFO_PAGE_LABELS[slug]} saved` : result.error || "Page was not saved");
+  };
+
+  return (
+    <>
+      <PageHeading eyebrow="Storefront" title="Information pages" />
+      <div className="content-admin-grid">
+        {INFO_PAGE_SLUGS.map((slug, index) => (
+          <article key={slug}>
+            <header>
+              <span>{index + 1}</span>
+              <div>
+                <small>/page/{slug}</small>
+                <h3>{pages[slug]?.title || INFO_PAGE_LABELS[slug]}</h3>
+              </div>
+            </header>
+            <label>
+              Title
+              <input
+                value={pages[slug]?.title || ""}
+                onChange={(event) => setPages((current) => ({ ...current, [slug]: { ...current[slug], title: event.target.value } }))}
+              />
+            </label>
+            <label>
+              Content
+              <textarea
+                rows={7}
+                value={pages[slug]?.body || ""}
+                onChange={(event) => setPages((current) => ({ ...current, [slug]: { ...current[slug], body: event.target.value } }))}
+              />
+            </label>
+            <footer>
+              <button type="button" onClick={() => window.open(`/page/${slug}`, "_blank")}>Preview</button>
+              <button type="button" disabled={saving === slug} onClick={() => save(slug)}>{saving === slug ? "Saving..." : "Save"}</button>
+            </footer>
+          </article>
         ))}
       </div>
     </>
