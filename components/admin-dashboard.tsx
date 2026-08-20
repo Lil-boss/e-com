@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   CircleDollarSign,
   ClipboardList,
+  Download,
   Eye,
   FileText,
   Gift,
@@ -1659,40 +1660,97 @@ function Reports({
   orders: Order[];
   products: Product[];
 }) {
+  const [range, setRange] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const today = localDay(new Date());
+  const weekAgo = localDay(new Date(Date.now() - 6 * dayMs));
+  const monthAgo = localDay(new Date(Date.now() - 29 * dayMs));
+
+  const inRange = (order: Order) => {
+    const day = localDay(new Date(order.created_at));
+    if (range === "week") return day >= weekAgo;
+    if (range === "month") return day >= monthAgo;
+    if (range === "custom") return (!from || day >= from) && (!to || day <= to);
+    return true;
+  };
+
+  const scoped = orders.filter(inRange);
+  const earning = scoped.filter((order) => !VOID_STATUSES.includes(order.status));
+  const revenue = earning.reduce((sum, order) => sum + order.grand_total, 0);
+  const delivered = scoped.filter((order) => order.status === "delivered");
+  const averageOrder = earning.length ? Math.round(revenue / earning.length) : 0;
+
+  const exportCsv = () => {
+    const header = ["Order", "Date", "Customer", "Phone", "Status", "Payment", "Method", "District", "Items", "Coupon", "Total"];
+    // quotes doubled, whole field wrapped: customer names and addresses contain commas
+    const cell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = scoped.map((order) => [
+      order.order_number, new Date(order.created_at).toISOString(), order.customer_name, order.customer_phone,
+      order.status, order.payment_status, order.payment_method || "", order.district, order.items,
+      order.coupon_code || "", order.grand_total,
+    ]);
+    const csv = [header, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");
+    // BOM so Excel opens Bengali names correctly
+    const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `torun-orders-${range === "custom" ? `${from || "start"}_${to || today}` : range}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <PageHeading eyebrow="Business insight" title="Reports" />
+      <div className="admin-toolbar">
+        <select value={range} onChange={(event) => setRange(event.target.value)}>
+          <option value="all">All time</option>
+          <option value="week">Last 7 days</option>
+          <option value="month">Last 30 days</option>
+          <option value="custom">Custom range</option>
+        </select>
+        {range === "custom" && (
+          <>
+            <input type="date" value={from} max={to || today} onChange={(event) => setFrom(event.target.value)} aria-label="From date" />
+            <input type="date" value={to} min={from || undefined} max={today} onChange={(event) => setTo(event.target.value)} aria-label="To date" />
+          </>
+        )}
+        <button type="button" className="admin-toolbar-clear" onClick={exportCsv} disabled={!scoped.length}>
+          <Download /> Export CSV
+        </button>
+      </div>
       <div className="report-grid">
         <article>
           <BarChart3 />
           <p>
             <span>Order value</span>
-            <strong>
-              {money(orders.filter((o) => !VOID_STATUSES.includes(o.status)).reduce((s, o) => s + o.grand_total, 0))}
-            </strong>
-            <small>{orders.length} orders</small>
+            <strong>{money(revenue)}</strong>
+            <small>{bn(earning.length)} order{earning.length === 1 ? "" : "s"} counted</small>
           </p>
         </article>
         <article>
-          <Package />
+          <CircleDollarSign />
           <p>
-            <span>Inventory units</span>
-            <strong>
-              {products
-                .reduce((s, p) => s + p.stock, 0)
-                .toLocaleString("en-US")}
-            </strong>
-            <small>{bn(products.length)} products</small>
+            <span>Average order</span>
+            <strong>{money(averageOrder)}</strong>
+            <small>Cancelled and refunded excluded</small>
           </p>
         </article>
         <article>
           <Truck />
           <p>
             <span>Delivered orders</span>
-            <strong>
-              {orders.filter((o) => o.status === "delivered").length}
-            </strong>
-            <small>Current data</small>
+            <strong>{bn(delivered.length)}</strong>
+            <small>{money(delivered.reduce((sum, order) => sum + order.grand_total, 0))} delivered value</small>
+          </p>
+        </article>
+        <article>
+          <Package />
+          <p>
+            <span>Inventory units</span>
+            <strong>{bn(products.reduce((sum, product) => sum + product.stock, 0))}</strong>
+            <small>{bn(products.length)} products · current</small>
           </p>
         </article>
       </div>
