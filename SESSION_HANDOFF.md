@@ -177,7 +177,9 @@ Files:
 - `supabase/migrations/202608180001_initial_commerce.sql`
 - `supabase/migrations/202608180002_product_commercial_fields.sql`
 - `supabase/migrations/202608180003_inventory_movement_policy.sql`
-- `supabase/migrations/202608200004_gap_fixes.sql` — **not yet applied to the live project**
+- `supabase/migrations/202608200004_gap_fixes.sql` — applied to the live project (verified
+  20 August 2026: the three stock functions exist and the coupon/audit/status-event
+  policies work).
 
 Schema includes:
 
@@ -284,5 +286,27 @@ npm test
 
 All three passed immediately before this handoff file was last updated.
 
-Apply `supabase/migrations/202608200004_gap_fixes.sql` to the Supabase project before
-using stock reservation, coupons, audit logging or order status history.
+## Order flow — verified end to end (20 August 2026)
+
+Traced with two live test orders on `TM-DATE-DB-1K` (baseline 42/0):
+
+- cart → checkout → `POST /api/orders`: order row, items, totals, coupon discount
+- `reserve_order_stock` on placement (42 → 42/1)
+- order appears in the admin list and detail modal with items, totals and timeline
+- transitions pending → confirmed → processing → packed → shipped → delivered
+- courier/tracking upsert into `shipments`, payment status change, audit log rows
+- `consume_order_stock` on delivered (42/1 → 41/0, `sale -1` movement)
+- `release_order_stock` on cancelled (41/1 → 41/0, `release` movement)
+- stock adjustment modal restored the consumed unit (41 → 42) with a reason
+
+Two labelled test orders remain in the database: `TM-48376740` (delivered,
+"TEST ORDER - delete me") and `TM-48547656` (cancelled, "TEST CANCEL - delete me").
+The delivered one adds ৳620 to the dashboard revenue tile.
+
+Known gaps found during that pass:
+
+- `NOTUN10` is advertised in the announcement bar but no such coupon exists, so it
+  fails at checkout. Create it in admin promotions or change the announcement text.
+- `app/checkout/page.tsx` treats a 503 from `/api/orders` as success and invents a
+  local order number. Unreachable while Supabase is configured, but it would lose
+  orders silently if the environment ever broke.
