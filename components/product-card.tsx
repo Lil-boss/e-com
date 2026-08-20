@@ -10,6 +10,7 @@ import type { CardProduct } from "@/lib/storefront";
 
 export function ProductCard({ product }: { product: CardProduct }) {
   const [added, setAdded] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
   const { addItem } = useCart();
   const { has, toggle } = useWishlist();
   const liked = has(product.id);
@@ -19,7 +20,7 @@ export function ProductCard({ product }: { product: CardProduct }) {
     <article className="product-card">
       <div className="product-image">
         <Link href={detailHref} aria-label={`${product.name} বিস্তারিত দেখুন`}>
-          <Image src={product.image} alt={product.name} fill sizes="(max-width: 700px) 50vw, 25vw" />
+          <Image src={product.image} alt={product.name} fill sizes="(max-width: 700px) 50vw, 25vw" className={imageReady ? "media-in" : "media-pending"} onLoad={() => setImageReady(true)} onError={() => setImageReady(true)} />
         </Link>
         <span className="product-badge">{product.badge}</span>
         <button className={`icon-btn wishlist ${liked ? "active" : ""}`} onClick={() => toggle(product.id)} aria-pressed={liked} aria-label={liked ? "পছন্দের তালিকা থেকে সরান" : "পছন্দের তালিকায় যোগ করুন"}>

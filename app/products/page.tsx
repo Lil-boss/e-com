@@ -95,7 +95,11 @@ function Catalogue() {
           </div>
 
           {loading ? (
-            <p className="catalogue-empty">পণ্য লোড হচ্ছে...</p>
+            <div className="product-grid" aria-busy="true" aria-label="পণ্য লোড হচ্ছে">
+              {Array.from({ length: 8 }, (_, index) => (
+                <div className="product-skeleton" key={index}><span /><i /><i /></div>
+              ))}
+            </div>
           ) : visible.length ? (
             <>
               <p className="catalogue-count">{bengali(visible.length)} টি পণ্য</p>
