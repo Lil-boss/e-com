@@ -1,11 +1,15 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateCoupon } from "@/lib/coupons";
+import { throttle } from "@/lib/rate-limit";
 import { notifyOrderPlaced } from "@/lib/notifications";
 import { isSupabaseConfigured, supabaseUrl } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
+  // each order reserves stock, so an unthrottled caller can lock the whole catalogue
+  const limited = throttle(request, "order", 6, 10 * 60_000, "একটু পরে আবার চেষ্টা করুন");
+  if (limited) return limited;
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!isSupabaseConfigured || !supabaseUrl || !secret) return NextResponse.json({ error: "Order backend is not configured" }, { status: 503 });
   const body = await request.json();

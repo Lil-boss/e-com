@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { throttle } from "@/lib/rate-limit";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
+  const limited = throttle(request, "review", 5, 60 * 60_000, "অনেকগুলো রিভিউ পাঠানো হয়েছে, পরে চেষ্টা করুন");
+  if (limited) return limited;
   if (!isSupabaseConfigured) return NextResponse.json({ error: "Supabase is not configured" }, { status: 503 });
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
