@@ -48,6 +48,14 @@ import {
   statusLabel,
 } from "./admin-modules";
 
+export type ProductVariant = {
+  id: string;
+  sku: string;
+  title: string;
+  price: number;
+  attributes?: { color?: string | null; size?: string | null };
+  stock: number;
+};
 export type Product = {
   id: string;
   name_bn: string;
@@ -60,6 +68,7 @@ export type Product = {
   low_stock_threshold?: number;
   variant_id?: string;
   variant_title?: string;
+  variants?: ProductVariant[];
   image: string;
   images?: string[];
   category: string;
@@ -111,6 +120,7 @@ type Props = {
 };
 type VariantDraft = {
   id: string;
+  variant_id?: string;
   color: string;
   size: string;
   sku: string;
@@ -174,7 +184,7 @@ export function AdminDashboard({
       ...Object.fromEntries(new FormData(form)),
       variants: variantRows
         .map(({ id, ...variant }) => variant)
-        .filter((variant) => variant.color || variant.size || variant.sku),
+        .filter((variant) => variant.variant_id || variant.color || variant.size || variant.sku),
     };
     const firstImage =
       String(values.image_paths || "")
@@ -213,7 +223,8 @@ export function AdminDashboard({
       }
       const normalized = {
         ...data,
-        stock: editingProduct?.stock ?? Number(values.stock || 0),
+        variants: data.variants ?? editingProduct?.variants,
+        stock: data.variants?.[0]?.stock ?? editingProduct?.stock ?? Number(values.stock || 0),
         image: firstImage,
         category: String(
           selectedCategory?.name_bn || editingProduct?.category || "—",
@@ -304,7 +315,17 @@ export function AdminDashboard({
   };
   const openEdit = (product: Product) => {
     setEditingProduct(product);
-    setVariantRows([]);
+    setVariantRows(
+      (product.variants || []).map((variant) => ({
+        id: variant.id,
+        variant_id: variant.id,
+        color: variant.attributes?.color || "",
+        size: variant.attributes?.size || "",
+        sku: variant.sku,
+        price: String(variant.price ?? ""),
+        stock: String(variant.stock ?? 0),
+      })),
+    );
     setProductModal(true);
   };
   const revenue = orders.reduce((sum, o) => sum + o.grand_total, 0);
@@ -649,105 +670,103 @@ export function AdminDashboard({
                   defaultValue="5"
                 />
               </label>
-              {!editingProduct && (
-                <section className="variant-builder full">
-                  <header>
-                    <div>
-                      <strong>Color ও Size variants</strong>
-                      <small>
-                        Fashion product হলে একই পণ্যের প্রতিটি color/size
-                        combination যোগ করুন।
-                      </small>
-                    </div>
+              <section className="variant-builder full">
+                <header>
+                  <div>
+                    <strong>Color ও Size variants</strong>
+                    <small>
+                      Fashion product হলে একই পণ্যের প্রতিটি color/size
+                      combination যোগ করুন।
+                    </small>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVariantRows((rows) => [
+                        ...rows,
+                        {
+                          id: crypto.randomUUID(),
+                          color: "",
+                          size: "",
+                          sku: "",
+                          price: "",
+                          stock: "0",
+                        },
+                      ])
+                    }
+                  >
+                    <Plus />
+                    Variant যোগ করুন
+                  </button>
+                </header>
+                {variantRows.map((variant, index) => (
+                  <div className="variant-row" key={variant.id}>
+                    <span>{index + 1}</span>
+                    <input
+                      aria-label="Color"
+                      placeholder="Color — যেমন: Black"
+                      value={variant.color}
+                      onChange={(event) =>
+                        updateVariant(variant.id, "color", event.target.value)
+                      }
+                    />
+                    <input
+                      aria-label="Size"
+                      placeholder="Size — যেমন: XL"
+                      value={variant.size}
+                      onChange={(event) =>
+                        updateVariant(variant.id, "size", event.target.value)
+                      }
+                    />
+                    <input
+                      aria-label="Variant SKU"
+                      placeholder="Variant SKU (optional)"
+                      value={variant.sku}
+                      onChange={(event) =>
+                        updateVariant(variant.id, "sku", event.target.value)
+                      }
+                    />
+                    <input
+                      aria-label="Variant price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Price (base price)"
+                      value={variant.price}
+                      onChange={(event) =>
+                        updateVariant(variant.id, "price", event.target.value)
+                      }
+                    />
+                    <input
+                      aria-label="Variant stock"
+                      type="number"
+                      min="0"
+                      placeholder="Stock"
+                      value={variant.stock}
+                      onChange={(event) =>
+                        updateVariant(variant.id, "stock", event.target.value)
+                      }
+                    />
                     <button
                       type="button"
+                      aria-label="Variant সরান"
                       onClick={() =>
-                        setVariantRows((rows) => [
-                          ...rows,
-                          {
-                            id: crypto.randomUUID(),
-                            color: "",
-                            size: "",
-                            sku: "",
-                            price: "",
-                            stock: "0",
-                          },
-                        ])
+                        setVariantRows((rows) =>
+                          rows.filter((row) => row.id !== variant.id),
+                        )
                       }
                     >
-                      <Plus />
-                      Variant যোগ করুন
+                      <Trash2 />
                     </button>
-                  </header>
-                  {variantRows.map((variant, index) => (
-                    <div className="variant-row" key={variant.id}>
-                      <span>{index + 1}</span>
-                      <input
-                        aria-label="Color"
-                        placeholder="Color — যেমন: Black"
-                        value={variant.color}
-                        onChange={(event) =>
-                          updateVariant(variant.id, "color", event.target.value)
-                        }
-                      />
-                      <input
-                        aria-label="Size"
-                        placeholder="Size — যেমন: XL"
-                        value={variant.size}
-                        onChange={(event) =>
-                          updateVariant(variant.id, "size", event.target.value)
-                        }
-                      />
-                      <input
-                        aria-label="Variant SKU"
-                        placeholder="Variant SKU (optional)"
-                        value={variant.sku}
-                        onChange={(event) =>
-                          updateVariant(variant.id, "sku", event.target.value)
-                        }
-                      />
-                      <input
-                        aria-label="Variant price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="Price (base price)"
-                        value={variant.price}
-                        onChange={(event) =>
-                          updateVariant(variant.id, "price", event.target.value)
-                        }
-                      />
-                      <input
-                        aria-label="Variant stock"
-                        type="number"
-                        min="0"
-                        placeholder="Stock"
-                        value={variant.stock}
-                        onChange={(event) =>
-                          updateVariant(variant.id, "stock", event.target.value)
-                        }
-                      />
-                      <button
-                        type="button"
-                        aria-label="Variant সরান"
-                        onClick={() =>
-                          setVariantRows((rows) =>
-                            rows.filter((row) => row.id !== variant.id),
-                          )
-                        }
-                      >
-                        <Trash2 />
-                      </button>
-                    </div>
-                  ))}
-                  {!variantRows.length && (
-                    <p>
-                      কোনো variant যোগ করা হয়নি। সাধারণ পণ্যের জন্য এটি খালি
-                      রাখুন।
-                    </p>
-                  )}
-                </section>
-              )}
+                  </div>
+                ))}
+                {!variantRows.length && (
+                  <p>
+                    কোনো variant যোগ করা হয়নি। সাধারণ পণ্যের জন্য এটি খালি
+                    রাখুন।
+                  </p>
+                )}
+              </section>
               <label className="full">
                 একাধিক ছবির URL
                 <textarea

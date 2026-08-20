@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CATALOG, requireStaff } from "@/lib/supabase/admin-auth";
+import { variantStock, variantValues, type VariantInput } from "@/lib/variants";
+import { createClient } from "@/lib/supabase/server";
 
 const authorizedClient = () => requireStaff(CATALOG);
 
@@ -21,12 +23,13 @@ export async function POST(request: NextRequest) {
   const { data: product, error } = await auth.supabase.from("products").insert({ name_bn: body.name_bn, name_en: body.name_en || null, slug, sku: body.sku, category_id: body.category_id || null, short_description: body.short_description || null, description: body.description || null, status: body.status || "draft", base_price: Number(body.price), compare_at_price: optionalNumber(body.compare_at_price), weight_grams: optionalNumber(body.weight_grams), uom: optionalText(body.uom), uom_value: optionalNumber(body.uom_value), discount: optionalNumber(body.discount), upc_no: optionalText(body.upc_no), ean_no: optionalText(body.ean_no), isbn_no: optionalText(body.isbn_no), part_no: optionalText(body.part_no), price_includes_vat: vatValue, is_featured: Boolean(body.is_featured), published_at: body.status === "published" ? new Date().toISOString() : null }).select().single();
   if (error || !product) return NextResponse.json({ error: error?.message || "Product creation failed" }, { status: 400 });
   const requestedVariants = Array.isArray(body.variants) ? body.variants.filter((variant: Record<string, unknown>) => variant.color || variant.size || variant.sku) : [];
-  const variantInputs: Array<Record<string, any>> = requestedVariants.length ? requestedVariants.map((variant: Record<string, unknown>, index: number) => {
-    const color = optionalText(variant.color);
-    const size = optionalText(variant.size);
-    const suffix = [color, size].filter(Boolean).join("-").replace(/\s+/g, "-").toUpperCase() || String(index + 1);
-    return { product_id: product.id, sku: optionalText(variant.sku) || `${body.sku}-${suffix}`, title: [color, size].filter(Boolean).join(" / ") || `Variant ${index + 1}`, attributes: { color, size }, price: optionalNumber(variant.price) ?? Number(body.price), compare_at_price: optionalNumber(body.compare_at_price), weight_grams: optionalNumber(body.weight_grams), requested_stock: Math.max(0, Number(variant.stock || 0)) };
-  }) : [{ product_id: product.id, sku: body.sku, title: body.variant_title || "Default", attributes: {}, price: Number(body.price), compare_at_price: optionalNumber(body.compare_at_price), weight_grams: optionalNumber(body.weight_grams), requested_stock: Math.max(0, Number(body.stock || 0)) }];
+  const variantInputs: Array<Record<string, any>> = requestedVariants.length ? requestedVariants.map((variant: VariantInput, index: number) => ({
+    product_id: product.id,
+    ...variantValues(variant, index, { sku: body.sku, base_price: body.price }),
+    compare_at_price: optionalNumber(body.compare_at_price),
+    weight_grams: optionalNumber(body.weight_grams),
+    requested_stock: variantStock(variant),
+  })) : [{ product_id: product.id, sku: body.sku, title: body.variant_title || "Default", attributes: {}, price: Number(body.price), compare_at_price: optionalNumber(body.compare_at_price), weight_grams: optionalNumber(body.weight_grams), requested_stock: Math.max(0, Number(body.stock || 0)) }];
   const variantRows = variantInputs.map((variant) => ({ product_id: variant.product_id, sku: variant.sku, title: variant.title, attributes: variant.attributes, price: variant.price, compare_at_price: variant.compare_at_price, weight_grams: variant.weight_grams }));
   const { data: variants, error: variantError } = await auth.supabase.from("product_variants").insert(variantRows).select("id,sku");
   if (variantError || !variants?.length) {
@@ -57,8 +60,57 @@ export async function PATCH(request: NextRequest) {
     await auth.supabase.from("product_media").delete().eq("product_id", id);
     if (imagePaths.length) await auth.supabase.from("product_media").insert(imagePaths.map((storagePath, index) => ({ product_id: id, storage_path: storagePath, alt_text: safeUpdates.name_bn || data.name_bn, sort_order: index })));
   }
-  if (!error) await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "product.updated", entity_type: "product", entity_id: id, before_data: before, after_data: data });
-  return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json(data);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (Array.isArray(body.variants) && body.variants.length) {
+    const problem = await syncVariants(auth.supabase, id, body.variants, data, auth.userId);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+  }
+  await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "product.updated", entity_type: "product", entity_id: id, before_data: before, after_data: data });
+  const { data: freshVariants } = await auth.supabase.from("product_variants").select("id,sku,title,price,attributes,inventory(on_hand)").eq("product_id", id);
+  return NextResponse.json({ ...data, variants: (freshVariants || []).map((variant) => ({ id: variant.id, sku: variant.sku, title: variant.title, price: Number(variant.price), attributes: variant.attributes || {}, stock: (variant.inventory as { on_hand?: number } | null)?.on_hand || 0 })) });
+}
+
+/**
+ * Applies the product modal's variant rows to product_variants + inventory.
+ * ponytail: an empty rows array is treated as "leave variants alone", so the last
+ * variant can only be removed by deleting the product. Add an explicit flag if that bites.
+ */
+async function syncVariants(supabase: Awaited<ReturnType<typeof createClient>>, productId: string, rows: VariantInput[], product: { sku: string; base_price: number; name_bn: string }, userId: string) {
+  const { data: existing } = await supabase.from("product_variants").select("id,sku,title,inventory(on_hand,reserved)").eq("product_id", productId);
+  const keptIds = rows.map((row) => row.variant_id).filter(Boolean);
+
+  for (const [index, row] of rows.entries()) {
+    const values = { product_id: productId, ...variantValues(row, index, product) };
+    const stock = variantStock(row);
+    const current = existing?.find((variant) => variant.id === row.variant_id);
+    const inventory = current?.inventory as { on_hand?: number; reserved?: number } | null;
+    const reserved = inventory?.reserved || 0;
+    if (current && stock < reserved) return `"${values.title}" ভ্যারিয়েন্টে ${reserved}টি সংরক্ষিত আছে, স্টক তার কম দেওয়া যাবে না`;
+
+    if (current) {
+      const { error } = await supabase.from("product_variants").update(values).eq("id", current.id);
+      if (error) return error.message;
+      const delta = stock - (inventory?.on_hand || 0);
+      if (delta !== 0) {
+        const { error: stockError } = await supabase.from("inventory").update({ on_hand: stock }).eq("variant_id", current.id);
+        if (stockError) return stockError.message;
+        // Keeps the movements ledger reconcilable with the inventory module's adjustments.
+        await supabase.from("inventory_movements").insert({ variant_id: current.id, movement_type: "manual_adjustment", quantity_delta: delta, reference_type: "admin", reason: "Product editor stock update", created_by: userId });
+      }
+    } else {
+      const { data: created, error } = await supabase.from("product_variants").insert(values).select("id").single();
+      if (error) return error.message;
+      const { error: stockError } = await supabase.from("inventory").insert({ variant_id: created.id, on_hand: stock, low_stock_threshold: 5 });
+      if (stockError) return stockError.message;
+      keptIds.push(created.id);
+    }
+  }
+
+  const removed = (existing || []).filter((variant) => !keptIds.includes(variant.id));
+  const busy = removed.find((variant) => ((variant.inventory as { reserved?: number } | null)?.reserved || 0) > 0);
+  if (busy) return `"${busy.title}" ভ্যারিয়েন্টের বিপরীতে অসম্পূর্ণ অর্ডার আছে, এটি মুছে ফেলা যাবে না`;
+  if (removed.length) await supabase.from("product_variants").delete().in("id", removed.map((variant) => variant.id));
+  return null;
 }
 
 export async function DELETE(request: NextRequest) {

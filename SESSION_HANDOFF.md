@@ -108,6 +108,13 @@ Modules present:
   - Category
 - Fashion variants support color, size, variant SKU, price, and independent stock.
 - Each color/size combination is stored in `product_variants.attributes`.
+- The variant builder is available when editing too: existing variants load into the
+  modal, edits update `product_variants` and `inventory`, new rows are inserted, and
+  removed rows are deleted. Stock cannot drop below reserved units, a variant with
+  reserved stock cannot be deleted, and stock changes write `inventory_movements` rows.
+  The PATCH response returns the fresh variant list so the modal never reopens stale.
+  Submitting an empty builder leaves variants untouched (see the `ponytail:` note in
+  the products route).
 
 ### Orders
 
@@ -228,9 +235,6 @@ silently rejected and coupons were unreachable for every role.
 
 ## Known gaps and suggested next work
 
-- Product edit updates base fields and the image gallery only; existing colour/size
-  variants still cannot be edited or added after creation (the products PATCH never
-  touches `product_variants`).
 - Cart items are keyed by product slug, so the customer never chooses a variant and
   checkout always takes the first active one. Fixing this is a cart data-model change.
 - Returned/refunded orders do not restock; only cancel (release) and deliver (consume)
@@ -239,7 +243,7 @@ silently rejected and coupons were unreachable for every role.
   still unused, and no gateway is connected.
 - Customers can read reviews but cannot submit them from the storefront yet.
 - Storefront content editing has no preview or version history.
-- Tests cover coupon evaluation only (`lib/coupons.test.ts`, `npm test`). Auth, order
+- Tests cover coupon evaluation and variant mapping (`lib/*.test.ts`, `npm test`). Auth, order
   pricing, inventory constraints, RLS and the admin APIs need a live Supabase project
   to test meaningfully.
 - Configure a real Supabase SMS provider for non-default phone OTP.
