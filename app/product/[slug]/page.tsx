@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/components/cart-provider";
+import { useWishlist } from "@/components/wishlist-provider";
 import { SiteHeader } from "@/components/site-header";
 import type { StoreSettings } from "@/lib/store-settings";
 import {
@@ -62,7 +63,6 @@ export default function ProductDetailPage() {
   const [productInfo, setProductInfo] = useState({ id: "black-seed-honey-500g", name: "কালোজিরা ফুলের প্রিমিয়াম মধু", nameEn: "Black Seed Flower Honey", sku: "TM-HNY-500", category: "খাঁটি খাবার · মধু", description: "কালোজিরা ফুল থেকে মৌমাছির সংগ্রহ করা গাঢ় রঙের, তীব্র স্বাদ ও অনন্য ঘ্রাণের প্রাকৃতিক মধু। ছোট ব্যাচে সংগ্রহ করায় থাকে প্রকৃতির আসল স্বাদ।", price: 645, compareAtPrice: 745, weight: 500, stock: 20 });
   const [dynamicRelated, setDynamicRelated] = useState(fallbackRelated);
   const [quantity, setQuantity] = useState(1);
-  const [liked, setLiked] = useState(false);
   const [added, setAdded] = useState(false);
   const [tab, setTab] = useState("details");
   const [postcode, setPostcode] = useState("");
@@ -71,7 +71,9 @@ export default function ProductDetailPage() {
   const [store, setStore] = useState<StoreSettings>({});
   const storeLogoUrl = store.logo_url || "";
   const whatsapp = store.phone ? `https://wa.me/${store.phone.replace(/\D/g, "")}` : "";
-  const { addItem, count, subtotal, openCart } = useCart();
+  const { addItem, count, subtotal, openCart, closeCart } = useCart();
+  const wishlist = useWishlist();
+  const liked = wishlist.has(productInfo.id);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -135,7 +137,7 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="product-summary">
-          <div className="summary-topline"><span className="stock"><i /> স্টকে আছে</span><div><button onClick={() => setLiked(!liked)} className={liked ? "liked" : ""}><Heart fill={liked ? "currentColor" : "none"} /> পছন্দ</button><button><Share2 /> শেয়ার</button></div></div>
+          <div className="summary-topline"><span className="stock"><i /> স্টকে আছে</span><div><button onClick={() => wishlist.toggle(productInfo.id)} aria-pressed={liked} className={liked ? "liked" : ""}><Heart fill={liked ? "currentColor" : "none"} /> পছন্দ</button><button><Share2 /> শেয়ার</button></div></div>
           <p className="product-category">{productInfo.category}</p>
           <h1>{productInfo.name}</h1>
           <div className="review-line"><div className="pd-stars">★★★★★</div><strong>৪.৯</strong><a href="#reviews">রিভিউ দেখুন</a><span>SKU: {productInfo.sku}</span></div>
@@ -149,7 +151,7 @@ export default function ProductDetailPage() {
             <div className="quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="পরিমাণ কমান"><Minus /></button><strong>{quantity}</strong><button onClick={() => setQuantity(quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div>
             <button className={`cart-cta ${added ? "added" : ""}`} onClick={addProductToCart}>{added ? <><PackageCheck /> কার্টে যোগ হয়েছে</> : <><ShoppingBag /> কার্টে যোগ করুন <span>· ৳{(productInfo.price * quantity).toLocaleString("bn-BD")}</span></>}</button>
           </div>
-          <button className="buy-now" onClick={() => { addProductToCart(); router.push("/checkout"); }}>এখনই কিনুন <ArrowRight /></button>
+          <button className="buy-now" onClick={() => { addProductToCart(); closeCart(); router.push("/checkout"); }}>এখনই কিনুন <ArrowRight /></button>
 
           <div className="delivery-check">
             <div className="delivery-icon"><Truck /></div><div><strong>ডেলিভারি কখন পাবেন?</strong><p>আপনার এলাকার পোস্ট কোড দিয়ে দেখুন</p><label><input value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="যেমন: ১২০৩" /><button onClick={() => setCheckedDelivery(true)}>চেক করুন</button></label>{checkedDelivery && <small><Check /> আনুমানিক ডেলিভারি: ২–৩ কার্যদিবস</small>}</div>
@@ -173,7 +175,7 @@ export default function ProductDetailPage() {
         {tab === "reviews" && <div className="simple-tab" id="reviews"><h2>ক্রেতাদের মতামত</h2><p>৩৮ জন যাচাইকৃত ক্রেতার গড় রেটিং ৪.৯/৫। স্বাদ, ঘ্রাণ এবং প্যাকেজিং নিয়ে ক্রেতারা সবচেয়ে বেশি সন্তুষ্ট।</p></div>}
       </section>
 
-      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /><button><Heart /></button></div><p>{item.meta}</p><h3>{item.name}</h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
+      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /><button onClick={() => wishlist.toggle(item.id)} aria-pressed={wishlist.has(item.id)} aria-label={`${item.name} পছন্দের তালিকায়`}><Heart fill={wishlist.has(item.id) ? "currentColor" : "none"} /></button></div><p>{item.meta}</p><h3>{item.name}</h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
 
       <section className="help-banner" id="help"><div className="pd-container"><div><span><MessageCircle /></span><p><strong>পণ্যটি নিয়ে কোনো প্রশ্ন আছে?</strong><small>আমাদের টিম আপনাকে সঠিক পণ্যটি বেছে নিতে সাহায্য করবে।</small></p></div>{whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer noopener">WhatsApp-এ কথা বলুন <ArrowRight /></a>}</div></section>
 

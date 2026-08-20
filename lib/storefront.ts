@@ -1,4 +1,4 @@
-import { currencySymbol } from "@/lib/store-settings";
+import { currencySymbol } from "./store-settings.ts";
 
 export type ApiProduct = {
   id: string; name_bn: string; slug: string; sku: string; short_description?: string;
