@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/components/cart-provider";
-import { ArrowLeft, ArrowRight, Banknote, Check, ChevronLeft, CircleCheckBig, CreditCard, Leaf, LockKeyhole, MapPin, MessageCircle, PackageCheck, ShoppingBag, Smartphone, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Banknote, Printer as PrinterIcon, Check, ChevronLeft, CircleCheckBig, CreditCard, Leaf, LockKeyhole, MapPin, MessageCircle, PackageCheck, ShoppingBag, Smartphone, Truck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { currencySymbol, useStoreSettings } from "@/lib/store-settings";
 import "./checkout.css";
@@ -22,6 +22,7 @@ export default function CheckoutPage() {
   const [payment, setPayment] = useState("cod");
   const [placed, setPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+  const [orderId, setOrderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const delivery = area === "dhaka" ? 70 : 120;
@@ -46,21 +47,23 @@ export default function CheckoutPage() {
     const data = new FormData(form);
     setSubmitting(true); setSubmitError("");
     let nextOrderNumber = `TM-${String(Date.now()).slice(-7)}`;
+    let nextOrderId = "";
     try {
       const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, coupon_code: couponApplied || undefined, note: data.get("note") }) });
       const result = await response.json();
-      if (response.ok) nextOrderNumber = result.order_number;
+      if (response.ok) { nextOrderNumber = result.order_number; nextOrderId = String(result.id || ""); }
       else if (response.status !== 503) throw new Error(result.error || "অর্ডার সম্পন্ন হয়নি");
     } catch (error) { setSubmitting(false); setSubmitError(error instanceof Error ? error.message : "অর্ডার সম্পন্ন হয়নি"); return; }
     setSubmitting(false);
     setOrderNumber(nextOrderNumber);
+    setOrderId(nextOrderId);
     setPlaced(true);
     clearCart();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (placed) {
-    return <main className="checkout-page"><header className="checkout-header"><div className="checkout-container"><CheckoutLogo /><span><LockKeyhole /> নিরাপদ চেকআউট</span></div></header><section className="order-success"><span><CircleCheckBig /></span><p className="checkout-eyebrow">অর্ডার সফল হয়েছে</p><h1>ধন্যবাদ! আপনার অর্ডারটি<br />আমরা পেয়েছি।</h1><p>অর্ডারটি নিশ্চিত করতে আমাদের প্রতিনিধি শিগগিরই আপনার সঙ্গে যোগাযোগ করবেন।</p><div><small>অর্ডার নম্বর</small><strong>{orderNumber}</strong></div><div className="success-steps"><span><Check /> অর্ডার গ্রহণ করা হয়েছে</span><span><PackageCheck /> প্যাকিংয়ের জন্য প্রস্তুত হচ্ছে</span><span><Truck /> ডেলিভারি আপডেট ফোনে পাবেন</span></div><Link href="/">হোমে ফিরে যান <ArrowLeft /></Link></section></main>;
+    return <main className="checkout-page"><header className="checkout-header"><div className="checkout-container"><CheckoutLogo /><span><LockKeyhole /> নিরাপদ চেকআউট</span></div></header><section className="order-success"><span><CircleCheckBig /></span><p className="checkout-eyebrow">অর্ডার সফল হয়েছে</p><h1>ধন্যবাদ! আপনার অর্ডারটি<br />আমরা পেয়েছি।</h1><p>অর্ডারটি নিশ্চিত করতে আমাদের প্রতিনিধি শিগগিরই আপনার সঙ্গে যোগাযোগ করবেন।</p><div><small>অর্ডার নম্বর</small><strong>{orderNumber}</strong></div><div className="success-steps"><span><Check /> অর্ডার গ্রহণ করা হয়েছে</span><span><PackageCheck /> প্যাকিংয়ের জন্য প্রস্তুত হচ্ছে</span><span><Truck /> ডেলিভারি আপডেট ফোনে পাবেন</span></div>{orderId && <Link className="invoice-link" href={`/invoice/${orderId}`}>ইনভয়েস দেখুন ও প্রিন্ট করুন <PrinterIcon size={16} /></Link>}<Link href="/">হোমে ফিরে যান <ArrowLeft /></Link></section></main>;
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowRight, ChevronLeft, CircleUserRound, Eye, EyeOff, Heart, Leaf, LockKeyhole, LogOut, MapPin, PackageCheck, Pencil, Plus, Settings, ShieldCheck, ShoppingBag, Trash2, Truck, UserRound } from "lucide-react";
+import { ArrowRight, ChevronLeft, Printer, CircleUserRound, Eye, EyeOff, Heart, Leaf, LockKeyhole, LogOut, MapPin, PackageCheck, Pencil, Plus, Settings, ShieldCheck, ShoppingBag, Trash2, Truck, UserRound } from "lucide-react";
 import "./account.css";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/client";
@@ -173,12 +173,13 @@ function RecentOrders({ all = false, orders, currency }: { all?: boolean; orders
   ];
   const rows = orders
     ? orders.slice(0, all ? undefined : 3).map((order) => ({
+        key: order.id,
         id: order.order_number,
         date: new Date(order.created_at).toLocaleDateString("bn-BD"),
         status: statusLabel[order.status] || order.status,
         total: `${symbol}${Number(order.grand_total).toLocaleString("bn-BD")}`,
         shipped: ["confirmed", "processing", "packed", "shipped"].includes(order.status),
       }))
-    : demo;
-  return <div className="recent-orders"><header><div><p>সাম্প্রতিক</p><h2>{all ? "সব অর্ডার" : "সাম্প্রতিক অর্ডার"}</h2></div></header>{!rows.length && <p className="address-empty">আপনার কোনো অর্ডার নেই।</p>}{rows.map((order) => <article key={order.id}><span>{order.shipped ? <Truck /> : <PackageCheck />}</span><div><strong>#{order.id}</strong><small>{order.date}</small></div><p><i />{order.status}</p><strong>{order.total}</strong></article>)}</div>;
+    : demo.map((order) => ({ ...order, key: "" }));
+  return <div className="recent-orders"><header><div><p>সাম্প্রতিক</p><h2>{all ? "সব অর্ডার" : "সাম্প্রতিক অর্ডার"}</h2></div></header>{!rows.length && <p className="address-empty">আপনার কোনো অর্ডার নেই।</p>}{rows.map((order) => <article key={order.id}><span>{order.shipped ? <Truck /> : <PackageCheck />}</span><div><strong>#{order.id}</strong><small>{order.date}</small></div><p><i />{order.status}</p><strong>{order.total}</strong>{order.key && <Link className="order-invoice" href={`/invoice/${order.key}`} title="ইনভয়েস"><Printer /></Link>}</article>)}</div>;
 }

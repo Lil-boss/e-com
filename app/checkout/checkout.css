@@ -16,3 +16,4 @@
 .coupon-message.error{color:#a34236}
 
 .checkout-discount dd { color: #2f7a52; font-weight: 600; }
+.order-success .invoice-link { margin-right: 9px; border: 1px solid var(--co-line); background: #fff; color: var(--co-green); }

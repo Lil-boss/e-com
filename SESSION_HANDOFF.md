@@ -67,6 +67,13 @@ The production build currently passes. `next.config.ts` limits build workers to 
 - Storefront data API: `app/api/storefront/route.ts` — accepts `?all=1&q=&category=`
   for the catalogue; without `all` it still returns the 8 featured products.
 - Product details API: `app/api/products/[slug]/route.ts`
+- Printable invoice: `/invoice/[id]` + `app/api/orders/[id]/route.ts`
+  - Browser print / "Save as PDF"; no PDF library. `@media print` in `invoice.css`
+    hides the cart drawer and the print button, and `document.title` becomes
+    `Invoice-<order number>` so the saved file is named sensibly.
+  - The order UUID is the access token (capability URL, like a Stripe receipt).
+    Reached from the checkout success screen, the account order list and the
+    admin order modal. There is no guest "order number + phone" lookup form.
 - Saved company logo is loaded dynamically on the storefront and admin sidebar.
 - Supabase-disabled or unavailable states use polished demo fallback data.
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { MessageSquareText, Pencil, Plus, Search, ShieldCheck, Tags, Trash2, Truck, X } from "lucide-react";
+import { MessageSquareText, Pencil, Plus, Printer, Search, ShieldCheck, Tags, Trash2, Truck, X } from "lucide-react";
 
 export const money = (value: number) => `৳${Number(value || 0).toLocaleString("bn-BD")}`;
 /** Bengali numerals for display, never for input values. */
@@ -348,7 +348,10 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
       <div className="admin-modal" onClick={(event) => event.stopPropagation()}>
         <header>
           <div><p>অর্ডার অপারেশন</p><h2>{order ? `#${order.order_number}` : "অর্ডার"}</h2></div>
-          <button type="button" onClick={onClose}><X /></button>
+          <div className="modal-head-actions">
+            {order && <a className="modal-invoice" href={`/invoice/${orderId}`} target="_blank" rel="noreferrer noopener"><Printer /> ইনভয়েস</a>}
+            <button type="button" onClick={onClose}><X /></button>
+          </div>
         </header>
         {error && <div className="admin-inline-error">{error}</div>}
         {!order && !error && <div className="order-detail"><p>লোড হচ্ছে...</p></div>}

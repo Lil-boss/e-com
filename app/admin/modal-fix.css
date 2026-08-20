@@ -320,3 +320,7 @@
 /* the dashboard panel is half-width: courier detail belongs on the orders page */
 .admin-dashboard-grid .order-table th:nth-child(5),
 .admin-dashboard-grid .order-table td:nth-child(5) { display: none; }
+.modal-head-actions { display: flex; align-items: center; gap: 10px; }
+.modal-invoice { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 7px; color: var(--ad-green); font-size: 13px; font-weight: 600; }
+.modal-invoice:hover { background: #f1f5f1; }
+.modal-invoice svg { width: 15px; }
