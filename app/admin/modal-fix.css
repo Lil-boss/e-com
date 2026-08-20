@@ -324,3 +324,8 @@
 .modal-invoice { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 7px; color: var(--ad-green); font-size: 13px; font-weight: 600; }
 .modal-invoice:hover { background: #f1f5f1; }
 .modal-invoice svg { width: 15px; }
+.admin-toolbar input[type="date"] { flex: 0 0 auto; width: 168px; height: 41px; padding: 0 11px; border: 1px solid var(--ad-line); border-radius: 8px; background: #fff; font: inherit; color: inherit; }
+.admin-toolbar input[type="date"]:focus { outline: 0; border-color: var(--ad-leaf); box-shadow: 0 0 0 3px rgba(47,122,82,.1); }
+.admin-toolbar-clear { height: 41px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 8px; background: #fff; color: var(--ad-green); font: inherit; font-weight: 600; cursor: pointer; }
+.admin-toolbar-clear:hover { background: #f1f5f1; }
+@media (max-width: 760px) { .admin-toolbar { flex-wrap: wrap; } .admin-toolbar label { width: 100%; } }

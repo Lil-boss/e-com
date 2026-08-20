@@ -1054,6 +1054,8 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
   );
 }
 const dayMs = 86400000;
+/** Local calendar day, not UTC: at +06 an early-morning order would otherwise count as yesterday. */
+const localDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 function Orders({
   orders,
   configured,
@@ -1067,19 +1069,26 @@ function Orders({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [range, setRange] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [selected, setSelected] = useState<Order | null>(null);
-  const visible = orders.filter((order) => {
-    const age = Date.now() - new Date(order.created_at).getTime();
-    return (
-      `${order.order_number} ${order.customer_name} ${order.customer_phone}`
-        .toLowerCase()
-        .includes(query.toLowerCase()) &&
-      (status === "all" || order.status === status) &&
-      (range === "all" ||
-        (range === "today" && age < dayMs) ||
-        (range === "week" && age < 7 * dayMs))
-    );
-  });
+  const today = localDay(new Date());
+  const weekAgo = localDay(new Date(Date.now() - 6 * dayMs));
+  const inRange = (order: Order) => {
+    const day = localDay(new Date(order.created_at));
+    if (range === "today") return day === today;
+    if (range === "week") return day >= weekAgo;
+    // ISO days compare correctly as strings, and an empty bound means open-ended
+    if (range === "custom") return (!from || day >= from) && (!to || day <= to);
+    return true;
+  };
+  const visible = orders.filter((order) =>
+    `${order.order_number} ${order.customer_name} ${order.customer_phone}`
+      .toLowerCase()
+      .includes(query.toLowerCase()) &&
+    (status === "all" || order.status === status) &&
+    inRange(order),
+  );
   return (
     <>
       <PageHeading eyebrow="Order operations" title="All orders" />
@@ -1115,7 +1124,36 @@ function Orders({
           <option value="all">All time</option>
           <option value="today">Today</option>
           <option value="week">Last 7 days</option>
+          <option value="custom">Custom range</option>
         </select>
+        {range === "custom" && (
+          <>
+            <input
+              type="date"
+              value={from}
+              max={to || today}
+              onChange={(event) => setFrom(event.target.value)}
+              aria-label="From date"
+            />
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              max={today}
+              onChange={(event) => setTo(event.target.value)}
+              aria-label="To date"
+            />
+            {(from || to) && (
+              <button
+                type="button"
+                className="admin-toolbar-clear"
+                onClick={() => { setFrom(""); setTo(""); }}
+              >
+                Clear
+              </button>
+            )}
+          </>
+        )}
       </div>
       <div className="admin-panel">
         <OrderTable orders={visible} onSelect={setSelected} />
