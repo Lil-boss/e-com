@@ -3,7 +3,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { supabaseUrl } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { AdminDashboard, type Order, type Product } from "@/components/admin-dashboard";
+import { AdminDashboard, type InventoryRow, type Order, type Product } from "@/components/admin-dashboard";
 import "./admin.css";
 import "./modal-fix.css";
 
@@ -22,7 +22,7 @@ const demoOrders = [
 ];
 
 export default async function AdminPage() {
-  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} logoUrl="" />;
+  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} variants={demoProducts.map((p) => ({ variant_id: p.id, product_name: p.name_bn, variant_title: "Default", sku: p.sku, category: p.category, stock: p.stock, reserved: 0, low_stock_threshold: 5 }))} logoUrl="" />;
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
@@ -38,14 +38,27 @@ export default async function AdminPage() {
   }
   if (!staff?.is_active) redirect("/admin/login?error=forbidden");
   const [productsResult, ordersResult, categoriesResult, sectionsResult, storeResult] = await Promise.all([
-    supabase.from("products").select("*,product_media(storage_path,sort_order),categories(name_bn),product_variants(id,sku,title,inventory(on_hand,reserved,low_stock_threshold))").order("created_at",{ascending:false}),
+    supabase.from("products").select("*,product_media(storage_path,sort_order),categories(name_bn),product_variants(id,sku,title,attributes,inventory(on_hand,reserved,low_stock_threshold))").order("created_at",{ascending:false}),
     supabase.from("orders").select("id,order_number,customer_name,customer_phone,status,payment_status,grand_total,created_at,district,order_items(count)").order("created_at",{ascending:false}).limit(50),
     supabase.from("categories").select("id,name_bn,slug,is_active,show_on_home,sort_order").order("sort_order"),
     supabase.from("homepage_sections").select("section_key,section_type,title,subtitle,content,is_active,sort_order").order("sort_order"),
     supabase.from("store_settings").select("value").eq("key","store").maybeSingle(),
   ]);
   const products = (productsResult.data || []).map((p: Record<string,unknown>) => { const variant=(p.product_variants as Array<{id:string;sku:string;title:string;inventory?:{on_hand?:number;reserved?:number;low_stock_threshold?:number}}>)?.[0]; return ({ ...p, image: ((p.product_media as Array<{storage_path:string}>)?.[0]?.storage_path || ""), images: (p.product_media as Array<{storage_path:string}>)?.map(media=>media.storage_path) || [], category: (p.categories as {name_bn?:string})?.name_bn || "—", variant_id:variant?.id,variant_title:variant?.title,stock:variant?.inventory?.on_hand||0,reserved:variant?.inventory?.reserved||0,low_stock_threshold:variant?.inventory?.low_stock_threshold||5 }) }) as unknown as Product[];
+  const variants: InventoryRow[] = (productsResult.data || []).flatMap((p: Record<string,unknown>) => {
+    const category = (p.categories as {name_bn?:string})?.name_bn || "—";
+    return ((p.product_variants as Array<{id:string;sku:string;title:string;attributes?:Record<string,string|null>;inventory?:{on_hand?:number;reserved?:number;low_stock_threshold?:number}}>) || []).map((variant) => ({
+      variant_id: variant.id,
+      product_name: String(p.name_bn),
+      variant_title: [variant.attributes?.color, variant.attributes?.size].filter(Boolean).join(" / ") || variant.title,
+      sku: variant.sku,
+      category,
+      stock: variant.inventory?.on_hand || 0,
+      reserved: variant.inventory?.reserved || 0,
+      low_stock_threshold: variant.inventory?.low_stock_threshold ?? 5,
+    }));
+  });
   const orders = (ordersResult.data || []).map((o: Record<string,unknown>) => ({ ...o, items: (o.order_items as Array<{count?:number}>)?.[0]?.count || 0 })) as unknown as Order[];
   const storeValue = (storeResult.data?.value || {}) as Record<string, unknown>;
-  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} logoUrl={String(storeValue.logo_url || "")} />;
+  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} variants={variants} logoUrl={String(storeValue.logo_url || "")} />;
 }

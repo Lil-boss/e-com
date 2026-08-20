@@ -89,3 +89,214 @@
 .admin-brand.has-company-logo > img { display: block; flex: 0 1 184px; min-width: 0; width: 100% !important; max-width: 184px !important; height: 48px !important; object-fit: contain; object-position: left center; }
 .admin-brand.has-company-logo > button { margin-left: auto; }
 @media (max-width: 700px) { .company-settings { padding: 20px 15px; } .company-setting-row { grid-template-columns: 1fr; gap: 5px; } .company-setting-row > label { text-align: left; } .company-settings > footer { margin-left: 0; align-items: stretch; flex-direction: column; } .company-settings > footer > button { width: 100%; } }
+
+/* modules added in the gap-fix pass */
+.admin-inline-error {
+  margin-bottom: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: #fbe8e5;
+  color: #9b4237;
+  font-size: 12px;
+}
+.admin-check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+.admin-check input {
+  width: auto !important;
+}
+.simple-list .row-actions {
+  gap: 4px;
+}
+.simple-list article.review-row {
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  align-items: start;
+  padding: 14px 16px;
+}
+.review-row small {
+  display: block;
+  max-width: 70ch;
+}
+.muted {
+  color: #8b928c;
+  font-weight: 400;
+}
+.order-detail {
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.order-detail-grid article {
+  padding: 14px;
+  border: 1px solid var(--ad-line, #dfe4df);
+  border-radius: 9px;
+  background: #f8faf7;
+}
+.order-detail-grid h3 {
+  margin: 0 0 7px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7b837c;
+}
+.order-detail-grid p {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  font-size: 12px;
+}
+.order-detail-grid small {
+  color: #5d665f;
+}
+.order-totals {
+  margin: 0 0 0 auto;
+  width: min(320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.order-totals div {
+  display: flex;
+  justify-content: space-between;
+}
+.order-totals dt,
+.order-totals dd {
+  margin: 0;
+}
+.order-totals .grand {
+  padding-top: 8px;
+  border-top: 1px solid var(--ad-line, #dfe4df);
+  font-weight: 700;
+  font-size: 15px;
+}
+.order-note {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: #fff7dd;
+  font-size: 12px;
+}
+.order-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.order-actions > div,
+.order-actions > form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid var(--ad-line, #dfe4df);
+  border-radius: 9px;
+}
+.order-actions h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.order-actions h3 svg {
+  width: 16px;
+}
+.order-actions input,
+.order-actions select,
+.order-actions textarea {
+  width: 100%;
+  border: 1px solid var(--ad-line, #dfe4df);
+  border-radius: 7px;
+  padding: 9px 10px;
+  font: inherit;
+}
+.order-actions button {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--ad-green, #103d2a);
+  color: #fff;
+}
+.order-status-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.order-status-buttons button {
+  align-self: auto;
+}
+.order-timeline {
+  padding: 15px;
+  border: 1px solid var(--ad-line, #dfe4df);
+  border-radius: 9px;
+}
+.order-timeline h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.order-timeline p {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: center;
+  gap: 4px 9px;
+  margin: 0 0 9px;
+  font-size: 12px;
+}
+.order-timeline span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ad-leaf, #2f7a52);
+}
+.order-timeline small {
+  grid-column: 2;
+  color: #8b928c;
+}
+.content-toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+@media (max-width: 760px) {
+  .order-detail-grid,
+  .order-actions {
+    grid-template-columns: 1fr;
+  }
+}
+/* the toggle moved inside a button, so it needs the pill styles again */
+.content-toggle > i {
+  display: block;
+  width: 31px;
+  height: 17px;
+  border-radius: 10px;
+  background: #c9ceca;
+  position: relative;
+}
+.content-toggle > i::after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  background: #fff;
+}
+.content-toggle > i.on {
+  background: var(--ad-leaf, #2f7a52);
+}
+.content-toggle > i.on::after {
+  left: 16px;
+}

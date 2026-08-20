@@ -1,5 +1,6 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { evaluateCoupon } from "@/lib/coupons";
 import { isSupabaseConfigured, supabaseUrl } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,14 +25,28 @@ export async function POST(request: NextRequest) {
   });
   const subtotal = itemRows.reduce((sum, item) => sum + item.line_total, 0);
   const shipping = body.delivery_area === "dhaka" ? 70 : 120;
+
+  const coupon = await evaluateCoupon(admin, body.coupon_code, subtotal);
+  if (coupon.error) return NextResponse.json({ error: coupon.error }, { status: 400 });
+  const discount = coupon.discount;
+
   const sessionClient = await createClient();
   const { data: claims } = await sessionClient.auth.getClaims();
   const customerId = claims?.claims?.sub || null;
   const orderNumber = `TM-${String(Date.now()).slice(-8)}`;
-  const { data: order, error: orderError } = await admin.from("orders").insert({ order_number: orderNumber, customer_id: customerId, customer_name: String(body.customer_name), customer_phone: String(body.customer_phone), customer_email: body.customer_email || null, address_line: String(body.address_line), area: body.delivery_area, thana: String(body.thana), district: String(body.district), postal_code: body.postal_code || null, landmark: body.landmark || null, status: "pending", payment_status: "pending", payment_method: body.payment_method || "cod", subtotal, discount_total: 0, shipping_total: shipping, tax_total: 0, grand_total: subtotal + shipping, customer_note: body.note || null, source: "web" }).select().single();
+  const { data: order, error: orderError } = await admin.from("orders").insert({ order_number: orderNumber, customer_id: customerId, customer_name: String(body.customer_name), customer_phone: String(body.customer_phone), customer_email: body.customer_email || null, address_line: String(body.address_line), area: body.delivery_area, thana: String(body.thana), district: String(body.district), postal_code: body.postal_code || null, landmark: body.landmark || null, status: "pending", payment_status: "pending", payment_method: body.payment_method || "cod", subtotal, discount_total: discount, shipping_total: shipping, tax_total: 0, grand_total: subtotal - discount + shipping, coupon_code: coupon.code, customer_note: body.note || null, source: "web" }).select().single();
   if (orderError || !order) return NextResponse.json({ error: orderError?.message || "Order could not be created" }, { status: 400 });
   const { error: itemsError } = await admin.from("order_items").insert(itemRows.map((item) => ({ ...item, order_id: order.id })));
   if (itemsError) { await admin.from("orders").delete().eq("id", order.id); return NextResponse.json({ error: itemsError.message }, { status: 400 }); }
+
+  const { error: stockError } = await admin.rpc("reserve_order_stock", { p_order_id: order.id });
+  if (stockError) {
+    await admin.from("orders").delete().eq("id", order.id);
+    const outOfStock = stockError.message.split("INSUFFICIENT_STOCK:")[1];
+    return NextResponse.json({ error: outOfStock ? `"${outOfStock.trim()}" পণ্যটির পর্যাপ্ত স্টক নেই` : "স্টক সংরক্ষণ করা যায়নি" }, { status: 409 });
+  }
+
   await admin.from("order_status_events").insert({ order_id: order.id, to_status: "pending", note: "Order placed from storefront", customer_visible: true, created_by: customerId });
-  return NextResponse.json({ id: order.id, order_number: order.order_number, grand_total: order.grand_total }, { status: 201 });
+  return NextResponse.json({ id: order.id, order_number: order.order_number, grand_total: order.grand_total, discount_total: discount }, { status: 201 });
 }
+

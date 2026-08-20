@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
@@ -36,6 +37,16 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import {
+  CategoriesModule,
+  CustomersModule,
+  OrderDetailModal,
+  PageHeading,
+  PromotionsModule,
+  ReviewsModule,
+  money,
+  statusLabel,
+} from "./admin-modules";
 
 export type Product = {
   id: string;
@@ -78,6 +89,16 @@ export type Order = {
   district: string;
   items: number;
 };
+export type InventoryRow = {
+  variant_id: string;
+  product_name: string;
+  variant_title: string;
+  sku: string;
+  category: string;
+  stock: number;
+  reserved: number;
+  low_stock_threshold: number;
+};
 type Props = {
   configured: boolean;
   role: string;
@@ -85,6 +106,7 @@ type Props = {
   orders: Order[];
   categories: Array<Record<string, unknown>>;
   sections: Array<Record<string, unknown>>;
+  variants: InventoryRow[];
   logoUrl: string;
 };
 type VariantDraft = {
@@ -95,7 +117,6 @@ type VariantDraft = {
   price: string;
   stock: string;
 };
-const money = (value: number) => `৳${value.toLocaleString("bn-BD")}`;
 const nav = [
   { id: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
   { id: "orders", label: "অর্ডার", icon: ShoppingBag },
@@ -109,19 +130,6 @@ const nav = [
   { id: "reports", label: "রিপোর্ট", icon: BarChart3 },
   { id: "settings", label: "সেটিংস", icon: Settings },
 ];
-const statusLabel: Record<string, string> = {
-  pending: "নতুন",
-  confirmed: "নিশ্চিত",
-  processing: "প্রসেসিং",
-  packed: "প্যাকড",
-  shipped: "ডেলিভারিতে",
-  delivered: "সম্পন্ন",
-  cancelled: "বাতিল",
-  published: "প্রকাশিত",
-  draft: "ড্রাফট",
-  archived: "আর্কাইভ",
-};
-
 export function AdminDashboard({
   configured,
   role,
@@ -129,6 +137,7 @@ export function AdminDashboard({
   orders,
   categories,
   sections,
+  variants,
   logoUrl,
 }: Props) {
   const [module, setModule] = useState("dashboard");
@@ -395,7 +404,9 @@ export function AdminDashboard({
               changeModule={setModule}
             />
           )}{" "}
-          {module === "orders" && <Orders orders={orders} />}{" "}
+          {module === "orders" && (
+            <Orders orders={orders} configured={configured} notify={notify} />
+          )}{" "}
           {module === "products" && (
             <Products
               products={filtered}
@@ -411,58 +422,16 @@ export function AdminDashboard({
               remove={deleteProduct}
             />
           )}{" "}
-          {module === "inventory" && <Inventory products={products} />}{" "}
+          {module === "inventory" && <Inventory rows={variants} />}{" "}
           {module === "categories" && (
-            <SimpleModule
-              title="ক্যাটাগরি"
-              eyebrow="স্টোর সংগঠন"
-              action="নতুন ক্যাটাগরি"
-              rows={(categories.length
-                ? categories
-                : [
-                    {
-                      name_bn: "খাঁটি খাবার",
-                      slug: "pure-foods",
-                      show_on_home: true,
-                    },
-                    {
-                      name_bn: "মৌসুমি ফল",
-                      slug: "seasonal-fruits",
-                      show_on_home: true,
-                    },
-                    {
-                      name_bn: "বই ও কম্বো",
-                      slug: "books",
-                      show_on_home: true,
-                    },
-                  ]
-              ).map((c) => [
-                String(c.name_bn),
-                String(c.slug),
-                c.show_on_home ? "হোমপেজে" : "ক্যাটালগে",
-              ])}
-            />
+            <CategoriesModule configured={configured} notify={notify} />
           )}{" "}
-          {module === "customers" && (
-            <EmptyModule
-              title="ক্রেতা"
-              text="Supabase profiles ও অর্ডার ডেটা থেকে ক্রেতার তালিকা, জীবনকালীন মূল্য এবং ঠিকানা এখানে দেখা যাবে।"
-              icon={Users}
-            />
-          )}{" "}
+          {module === "customers" && <CustomersModule configured={configured} />}{" "}
           {module === "promotions" && (
-            <EmptyModule
-              title="প্রমোশন"
-              text="কুপন, সময়সীমা, ন্যূনতম অর্ডার এবং ব্যবহারের সীমা পরিচালনা করুন।"
-              icon={Gift}
-            />
+            <PromotionsModule configured={configured} notify={notify} />
           )}{" "}
           {module === "reviews" && (
-            <EmptyModule
-              title="রিভিউ মডারেশন"
-              text="নতুন রিভিউ অনুমোদন, প্রত্যাখ্যান এবং যাচাইকৃত কেনাকাটা পর্যালোচনা করুন।"
-              icon={MessageSquareText}
-            />
+            <ReviewsModule configured={configured} notify={notify} />
           )}{" "}
           {module === "content" && (
             <Content
@@ -849,32 +818,6 @@ export function AdminDashboard({
   );
 }
 
-function PageHeading({
-  eyebrow,
-  title,
-  action,
-  onAction,
-}: {
-  eyebrow: string;
-  title: string;
-  action?: string;
-  onAction?: () => void;
-}) {
-  return (
-    <div className="admin-page-heading">
-      <div>
-        <p>{eyebrow}</p>
-        <h1>{title}</h1>
-      </div>
-      {action && (
-        <button onClick={onAction}>
-          <Plus />
-          {action}
-        </button>
-      )}
-    </div>
-  );
-}
 function Dashboard({
   revenue,
   pending,
@@ -990,7 +933,7 @@ function Dashboard({
     </>
   );
 }
-function OrderTable({ orders }: { orders: Order[] }) {
+function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: Order) => void }) {
   return (
     <div className="admin-table-wrap">
       <table>
@@ -1005,6 +948,11 @@ function OrderTable({ orders }: { orders: Order[] }) {
           </tr>
         </thead>
         <tbody>
+          {!orders.length && (
+            <tr>
+              <td colSpan={6}>কোনো অর্ডার পাওয়া যায়নি</td>
+            </tr>
+          )}
           {orders.map((o) => (
             <tr key={o.id}>
               <td>
@@ -1028,9 +976,14 @@ function OrderTable({ orders }: { orders: Order[] }) {
                 <small>{o.items}টি পণ্য</small>
               </td>
               <td>
-                <button>
-                  <ChevronLeft />
-                </button>
+                {onSelect && (
+                  <button
+                    className="table-text-button"
+                    onClick={() => onSelect(o)}
+                  >
+                    বিস্তারিত
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -1039,30 +992,82 @@ function OrderTable({ orders }: { orders: Order[] }) {
     </div>
   );
 }
-function Orders({ orders }: { orders: Order[] }) {
+const dayMs = 86400000;
+function Orders({
+  orders,
+  configured,
+  notify,
+}: {
+  orders: Order[];
+  configured: boolean;
+  notify: (message: string) => void;
+}) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [range, setRange] = useState("all");
+  const [selected, setSelected] = useState<Order | null>(null);
+  const visible = orders.filter((order) => {
+    const age = Date.now() - new Date(order.created_at).getTime();
+    return (
+      `${order.order_number} ${order.customer_name} ${order.customer_phone}`
+        .toLowerCase()
+        .includes(query.toLowerCase()) &&
+      (status === "all" || order.status === status) &&
+      (range === "all" ||
+        (range === "today" && age < dayMs) ||
+        (range === "week" && age < 7 * dayMs))
+    );
+  });
   return (
     <>
       <PageHeading eyebrow="অর্ডার অপারেশন" title="সব অর্ডার" />
       <div className="admin-toolbar">
         <label>
           <Search />
-          <input placeholder="অর্ডার বা ফোন দিয়ে খুঁজুন" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="অর্ডার, নাম বা ফোন দিয়ে খুঁজুন"
+          />
         </label>
-        <select>
-          <option>সব স্ট্যাটাস</option>
-          <option>নতুন</option>
-          <option>নিশ্চিত</option>
-          <option>ডেলিভারিতে</option>
+        <select
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        >
+          <option value="all">সব স্ট্যাটাস</option>
+          {[
+            "pending",
+            "confirmed",
+            "processing",
+            "packed",
+            "shipped",
+            "delivered",
+            "cancelled",
+          ].map((value) => (
+            <option key={value} value={value}>
+              {statusLabel[value]}
+            </option>
+          ))}
         </select>
-        <select>
-          <option>সব সময়</option>
-          <option>আজ</option>
-          <option>গত ৭ দিন</option>
+        <select value={range} onChange={(event) => setRange(event.target.value)}>
+          <option value="all">সব সময়</option>
+          <option value="today">আজ</option>
+          <option value="week">গত ৭ দিন</option>
         </select>
       </div>
       <div className="admin-panel">
-        <OrderTable orders={orders} />
+        <OrderTable orders={visible} onSelect={setSelected} />
       </div>
+      {selected && (
+        <OrderDetailModal
+          orderId={selected.id}
+          configured={configured}
+          notify={notify}
+          onClose={() => setSelected(null)}
+          onUpdated={() => router.refresh()}
+        />
+      )}
     </>
   );
 }
@@ -1200,23 +1205,21 @@ function Products({
     </>
   );
 }
-function Inventory({ products }: { products: Product[] }) {
-  const [rows, setRows] = useState(products);
+function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
+  const [rows, setRows] = useState(initialRows);
   const [query, setQuery] = useState("");
   const [availability, setAvailability] = useState("all");
-  const [selected, setSelected] = useState<Product | null>(null);
+  const [selected, setSelected] = useState<InventoryRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const visible = rows.filter(
-    (product) =>
-      `${product.name_bn} ${product.sku}`
+    (row) =>
+      `${row.product_name} ${row.sku} ${row.variant_title}`
         .toLowerCase()
         .includes(query.toLowerCase()) &&
       (availability === "all" ||
-        (availability === "low" &&
-          product.stock <= (product.low_stock_threshold ?? 5)) ||
-        (availability === "healthy" &&
-          product.stock > (product.low_stock_threshold ?? 5))),
+        (availability === "low" && row.stock <= row.low_stock_threshold) ||
+        (availability === "healthy" && row.stock > row.low_stock_threshold)),
   );
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1225,7 +1228,7 @@ function Inventory({ products }: { products: Product[] }) {
     const stock = Number(data.get("stock"));
     const reason = String(data.get("reason"));
     setSaving(true);
-    if (isSupabaseConfigured && selected.variant_id) {
+    if (isSupabaseConfigured) {
       const response = await fetch("/api/admin/inventory", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
@@ -1237,31 +1240,31 @@ function Inventory({ products }: { products: Product[] }) {
       });
       const result = await response.json();
       if (!response.ok) {
-        setMessage(result.error || "স্টক আপডেট হয়নি");
+        setMessage(result.error || "স্টক আপডেট হয়নি");
         setSaving(false);
         return;
       }
     }
     setRows((current) =>
-      current.map((product) =>
-        product.id === selected.id ? { ...product, stock } : product,
+      current.map((row) =>
+        row.variant_id === selected.variant_id ? { ...row, stock } : row,
       ),
     );
     setSaving(false);
     setSelected(null);
-    setMessage("স্টক সফলভাবে আপডেট হয়েছে");
+    setMessage("স্টক সফলভাবে আপডেট হয়েছে");
     window.setTimeout(() => setMessage(""), 2500);
   };
   return (
     <>
-      <PageHeading eyebrow="স্টক নিয়ন্ত্রণ" title="ইনভেন্টরি" />
+      <PageHeading eyebrow="স্টক নিয়ন্ত্রণ" title="ইনভেন্টরি" />
       <div className="admin-toolbar">
         <label>
           <Search />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="পণ্য বা SKU দিয়ে খুঁজুন"
+            placeholder="পণ্য, ভ্যারিয়েন্ট বা SKU দিয়ে খুঁজুন"
           />
         </label>
         <select
@@ -1279,41 +1282,40 @@ function Inventory({ products }: { products: Product[] }) {
             <thead>
               <tr>
                 <th>পণ্য</th>
-                <th>SKU / Variant</th>
+                <th>ভ্যারিয়েন্ট</th>
+                <th>SKU</th>
                 <th>মোট স্টক</th>
                 <th>সংরক্ষিত</th>
-                <th>বিক্রয়যোগ্য</th>
+                <th>বিক্রয়যোগ্য</th>
                 <th>অবস্থা</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {visible.map((p) => (
-                <tr key={p.id}>
+              {visible.map((row) => (
+                <tr key={row.variant_id}>
                   <td>
-                    <strong>{p.name_bn}</strong>
-                    <small>{p.category}</small>
+                    <strong>{row.product_name}</strong>
+                    <small>{row.category}</small>
                   </td>
                   <td>
-                    {p.sku}
-                    <small>
-                      {p.variant_title && p.variant_title !== "Default"
-                        ? p.variant_title
-                        : "Default variant"}
-                    </small>
+                    {row.variant_title && row.variant_title !== "Default"
+                      ? row.variant_title
+                      : "একক ভ্যারিয়েন্ট"}
                   </td>
+                  <td>{row.sku}</td>
                   <td>
-                    <strong>{p.stock}</strong>
+                    <strong>{row.stock}</strong>
                   </td>
-                  <td>{p.reserved ?? 0}</td>
+                  <td>{row.reserved}</td>
                   <td>
-                    <strong>{Math.max(0, p.stock - (p.reserved ?? 0))}</strong>
+                    <strong>{Math.max(0, row.stock - row.reserved)}</strong>
                   </td>
                   <td>
                     <span
-                      className={`admin-status ${p.stock <= (p.low_stock_threshold ?? 5) ? "cancelled" : "published"}`}
+                      className={`admin-status ${row.stock <= row.low_stock_threshold ? "cancelled" : "published"}`}
                     >
-                      {p.stock <= (p.low_stock_threshold ?? 5)
+                      {row.stock <= row.low_stock_threshold
                         ? "লো স্টক"
                         : "স্টকে আছে"}
                     </span>
@@ -1322,11 +1324,11 @@ function Inventory({ products }: { products: Product[] }) {
                     <button
                       className="table-text-button"
                       onClick={() => {
-                        setSelected(p);
+                        setSelected(row);
                         setMessage("");
                       }}
                     >
-                      সমন্বয়
+                      সমন্বয়
                     </button>
                   </td>
                 </tr>
@@ -1335,7 +1337,7 @@ function Inventory({ products }: { products: Product[] }) {
           </table>
           {!visible.length && (
             <div className="inventory-empty">
-              কোনো matching inventory পাওয়া যায়নি।
+              কোনো matching inventory পাওয়া যায়নি।
             </div>
           )}
         </div>
@@ -1349,10 +1351,11 @@ function Inventory({ products }: { products: Product[] }) {
           >
             <header>
               <div>
-                <p>স্টক সমন্বয়</p>
-                <h2>{selected.name_bn}</h2>
+                <p>স্টক সমন্বয়</p>
+                <h2>{selected.product_name}</h2>
                 <small>
-                  {selected.sku} · বর্তমানে {selected.stock}টি
+                  {selected.variant_title} · {selected.sku} · বর্তমানে{" "}
+                  {selected.stock}টি
                 </small>
               </div>
               <button type="button" onClick={() => setSelected(null)}>
@@ -1364,15 +1367,15 @@ function Inventory({ products }: { products: Product[] }) {
               <input
                 name="stock"
                 type="number"
-                min={selected.reserved ?? 0}
+                min={selected.reserved}
                 defaultValue={selected.stock}
                 required
                 autoFocus
               />
-              <small>Reserved stock-এর কম দেওয়া যাবে না।</small>
+              <small>Reserved stock-এর কম দেওয়া যাবে না।</small>
             </label>
             <label>
-              সমন্বয়ের কারণ
+              সমন্বয়ের কারণ
               <textarea
                 name="reason"
                 rows={3}
@@ -1397,66 +1400,6 @@ function Inventory({ products }: { products: Product[] }) {
           {message}
         </div>
       )}
-    </>
-  );
-}
-function SimpleModule({
-  title,
-  eyebrow,
-  action,
-  rows,
-}: {
-  title: string;
-  eyebrow: string;
-  action: string;
-  rows: string[][];
-}) {
-  return (
-    <>
-      <PageHeading eyebrow={eyebrow} title={title} action={action} />
-      <div className="admin-panel simple-list">
-        {rows.map((row, i) => (
-          <article key={i}>
-            <span>
-              <Tags />
-            </span>
-            <p>
-              <strong>{row[0]}</strong>
-              <small>/{row[1]}</small>
-            </p>
-            <b>{row[2]}</b>
-            <button>
-              <Pencil />
-            </button>
-          </article>
-        ))}
-      </div>
-    </>
-  );
-}
-function EmptyModule({
-  title,
-  text,
-  icon: Icon,
-}: {
-  title: string;
-  text: string;
-  icon: typeof Users;
-}) {
-  return (
-    <>
-      <PageHeading eyebrow="ম্যানেজমেন্ট" title={title} />
-      <div className="admin-empty">
-        <span>
-          <Icon />
-        </span>
-        <h2>{title} মডিউল প্রস্তুত</h2>
-        <p>{text}</p>
-        <button>
-          <Plus />
-          নতুন এন্ট্রি
-        </button>
-      </div>
     </>
   );
 }
@@ -1487,50 +1430,101 @@ function Content({
         {
           section_key: "seasonal",
           title: "বাগান থেকে সোজা আপনার টেবিলে",
-          subtitle: "মৌসুমি আয়োজন",
+          subtitle: "মৌসুমি আয়োজন",
           is_active: true,
         },
       ];
   return (
     <>
-      <PageHeading eyebrow="ডায়নামিক স্টোরফ্রন্ট" title="হোমপেজ কনটেন্ট" />
+      <PageHeading eyebrow="ডায়নামিক স্টোরফ্রন্ট" title="হোমপেজ কনটেন্ট" />
       <div className="content-admin-grid">
         {data.map((section, i) => (
-          <article key={String(section.section_key)}>
-            <header>
-              <span>{i + 1}</span>
-              <div>
-                <small>{String(section.section_key)}</small>
-                <h3>{String(section.title)}</h3>
-              </div>
-              <i className={section.is_active ? "on" : ""} />
-            </header>
-            <label>
-              শিরোনাম
-              <input defaultValue={String(section.title || "")} />
-            </label>
-            <label>
-              সহায়ক লেখা
-              <input defaultValue={String(section.subtitle || "")} />
-            </label>
-            <footer>
-              <button>প্রিভিউ</button>
-              <button
-                onClick={() =>
-                  notify(
-                    configured
-                      ? "পরিবর্তন API-তে পাঠানোর জন্য প্রস্তুত"
-                      : "প্রিভিউ পরিবর্তন সংরক্ষিত",
-                  )
-                }
-              >
-                সংরক্ষণ
-              </button>
-            </footer>
-          </article>
+          <ContentCard
+            key={String(section.section_key)}
+            index={i}
+            section={section}
+            configured={configured}
+            notify={notify}
+          />
         ))}
       </div>
     </>
+  );
+}
+function ContentCard({
+  section,
+  index,
+  configured,
+  notify,
+}: {
+  section: Record<string, unknown>;
+  index: number;
+  configured: boolean;
+  notify: (m: string) => void;
+}) {
+  const [title, setTitle] = useState(String(section.title || ""));
+  const [subtitle, setSubtitle] = useState(String(section.subtitle || ""));
+  const [active, setActive] = useState(section.is_active !== false);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!configured) {
+      notify("প্রিভিউ মোডে পরিবর্তন সংরক্ষণ হয় না");
+      return;
+    }
+    setSaving(true);
+    const response = await fetch("/api/admin/content", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        section_key: section.section_key,
+        title,
+        subtitle,
+        content: section.content || {},
+        is_active: active,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setSaving(false);
+    notify(
+      response.ok
+        ? "কনটেন্ট সংরক্ষিত হয়েছে"
+        : result.error || "কনটেন্ট সংরক্ষণ হয়নি",
+    );
+  };
+  return (
+    <article>
+      <header>
+        <span>{index + 1}</span>
+        <div>
+          <small>{String(section.section_key)}</small>
+          <h3>{title || "শিরোনামহীন"}</h3>
+        </div>
+        <button
+          type="button"
+          className="content-toggle"
+          aria-label="সেকশন সক্রিয়/নিষ্ক্রিয়"
+          onClick={() => setActive((current) => !current)}
+        >
+          <i className={active ? "on" : ""} />
+        </button>
+      </header>
+      <label>
+        শিরোনাম
+        <input value={title} onChange={(e) => setTitle(e.target.value)} />
+      </label>
+      <label>
+        সহায়ক লেখা
+        <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+      </label>
+      <footer>
+        <button type="button" onClick={() => window.open("/", "_blank")}>
+          প্রিভিউ
+        </button>
+        <button type="button" disabled={saving} onClick={save}>
+          {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+        </button>
+      </footer>
+    </article>
   );
 }
 function Reports({

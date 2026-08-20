@@ -5,12 +5,19 @@ import Link from "next/link";
 import { useCart } from "@/components/cart-provider";
 import { ArrowLeft, Banknote, Check, ChevronLeft, CircleCheckBig, CreditCard, Leaf, LockKeyhole, MapPin, MessageCircle, PackageCheck, ShoppingBag, Smartphone, Truck } from "lucide-react";
 import { FormEvent, useState } from "react";
+import { currencySymbol, useStoreSettings } from "@/lib/store-settings";
 import "./checkout.css";
-
-const money = (value: number) => `৳${value.toLocaleString("bn-BD")}`;
 
 export default function CheckoutPage() {
   const { items, subtotal, updateQuantity, clearCart } = useCart();
+  const store = useStoreSettings();
+  const money = (value: number) => `${currencySymbol(store.currency)}${value.toLocaleString("bn-BD")}`;
+  const supportPhone = store.phone || "+8801886494257";
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [discount, setDiscount] = useState(0);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
   const [area, setArea] = useState("dhaka");
   const [payment, setPayment] = useState("cod");
   const [placed, setPlaced] = useState(false);
@@ -18,7 +25,19 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const delivery = area === "dhaka" ? 70 : 120;
-  const total = subtotal + delivery;
+  const total = Math.max(0, subtotal - discount) + delivery;
+
+  const applyCoupon = async () => {
+    const code = coupon.trim();
+    if (!code) return;
+    setCheckingCoupon(true); setCouponError("");
+    const response = await fetch("/api/coupons", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code, subtotal }) });
+    const result = await response.json().catch(() => ({}));
+    setCheckingCoupon(false);
+    if (!response.ok) { setDiscount(0); setCouponApplied(""); setCouponError(result.error || "কুপনটি প্রয়োগ করা যায়নি"); return; }
+    setDiscount(Number(result.discount) || 0);
+    setCouponApplied(result.code);
+  };
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,7 +47,7 @@ export default function CheckoutPage() {
     setSubmitting(true); setSubmitError("");
     let nextOrderNumber = `TM-${String(Date.now()).slice(-7)}`;
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, note: data.get("note") }) });
+      const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: items.map((item) => ({ id: item.id, quantity: item.quantity })), customer_name: data.get("name"), customer_phone: data.get("phone"), customer_email: data.get("email"), address_line: data.get("address"), delivery_area: area, district: data.get("district"), thana: data.get("area"), postal_code: data.get("postcode"), landmark: data.get("landmark"), payment_method: payment, coupon_code: couponApplied || undefined, note: data.get("note") }) });
       const result = await response.json();
       if (response.ok) nextOrderNumber = result.order_number;
       else if (response.status !== 503) throw new Error(result.error || "অর্ডার সম্পন্ন হয়নি");
@@ -73,7 +92,7 @@ export default function CheckoutPage() {
         </div>
 
         <aside className="order-summary">
-          <div className="order-summary-card"><header><h2>অর্ডার সামারি</h2><span>{items.length}টি পণ্য</span></header><div className="checkout-items">{items.map((item) => <article key={item.id}><div className="checkout-item-image"><Image src={item.image} alt={item.name} fill sizes="66px" /><i>{item.quantity}</i></div><div><p>{item.variant}</p><h3>{item.name}</h3><select value={item.quantity} onChange={(event) => updateQuantity(item.id, Number(event.target.value))} aria-label={`${item.name} পরিমাণ`}>{[1,2,3,4,5].map((number) => <option key={number}>{number}</option>)}</select></div><strong>{money(item.price * item.quantity)}</strong></article>)}</div><div className="coupon"><input placeholder="কুপন কোড" /><button type="button">প্রয়োগ করুন</button></div><dl><div><dt>সাবটোটাল</dt><dd>{money(subtotal)}</dd></div><div><dt>ডেলিভারি</dt><dd>{money(delivery)}</dd></div><div className="grand-total"><dt>সর্বমোট</dt><dd>{money(total)}</dd></div></dl>{submitError&&<div className="checkout-submit-error">{submitError}</div>}<button className="place-order" type="submit" disabled={submitting}>{submitting?"অর্ডার তৈরি হচ্ছে...":"অর্ডার নিশ্চিত করুন"} <span>{money(total)}</span></button><p className="terms"><LockKeyhole /> অর্ডার করার মাধ্যমে আপনি আমাদের <a href="#">শর্তাবলি</a> ও <a href="#">গোপনীয়তা নীতি</a> মেনে নিচ্ছেন।</p></div><div className="checkout-help"><MessageCircle /><p><strong>অর্ডারে সাহায্য লাগবে?</strong><small>সকাল ৯টা–রাত ১০টা</small></p><a href="tel:+8801886494257">কল করুন</a></div>
+          <div className="order-summary-card"><header><h2>অর্ডার সামারি</h2><span>{items.length}টি পণ্য</span></header><div className="checkout-items">{items.map((item) => <article key={item.id}><div className="checkout-item-image"><Image src={item.image} alt={item.name} fill sizes="66px" /><i>{item.quantity}</i></div><div><p>{item.variant}</p><h3>{item.name}</h3><select value={item.quantity} onChange={(event) => updateQuantity(item.id, Number(event.target.value))} aria-label={`${item.name} পরিমাণ`}>{[1,2,3,4,5].map((number) => <option key={number}>{number}</option>)}</select></div><strong>{money(item.price * item.quantity)}</strong></article>)}</div><div className="coupon"><input placeholder="কুপন কোড" /><button type="button">প্রয়োগ করুন</button></div><dl><div><dt>সাবটোটাল</dt><dd>{money(subtotal)}</dd></div><div><dt>ডেলিভারি</dt><dd>{money(delivery)}</dd></div><div className="grand-total"><dt>সর্বমোট</dt><dd>{money(total)}</dd></div></dl>{submitError&&<div className="checkout-submit-error">{submitError}</div>}<button className="place-order" type="submit" disabled={submitting}>{submitting?"অর্ডার তৈরি হচ্ছে...":"অর্ডার নিশ্চিত করুন"} <span>{money(total)}</span></button><p className="terms"><LockKeyhole /> অর্ডার করার মাধ্যমে আপনি আমাদের <a href="#">শর্তাবলি</a> ও <a href="#">গোপনীয়তা নীতি</a> মেনে নিচ্ছেন।</p></div><div className="checkout-help"><MessageCircle /><p><strong>অর্ডারে সাহায্য লাগবে?</strong><small>সকাল ৯টা–রাত ১০টা</small></p><a href={`tel:${supportPhone}`}>কল করুন</a></div>
         </aside>
       </form>}
     </main>

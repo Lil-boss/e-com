@@ -31,6 +31,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { currencySymbol, type StoreSettings } from "@/lib/store-settings";
 
 const categories = [
   {
@@ -202,7 +203,8 @@ export default function HomePage() {
   const [dynamicProducts, setDynamicProducts] = useState(products);
   const [dynamicReviews, setDynamicReviews] = useState(reviews);
   const [dynamicHeroSlides, setDynamicHeroSlides] = useState(heroSlides);
-  const [storeLogoUrl, setStoreLogoUrl] = useState("");
+  const [store, setStore] = useState<StoreSettings>({});
+  const storeLogoUrl = store.logo_url || "";
   const { count, subtotal, openCart } = useCart();
 
   useEffect(() => {
@@ -220,13 +222,14 @@ export default function HomePage() {
           products?: Array<{ id: string; name_bn: string; slug: string; sku: string; short_description?: string; base_price: number; compare_at_price?: number; weight_grams?: number; product_media?: Array<{ storage_path: string }>; reviews?: Array<{ rating: number }> }>;
           sections?: Array<{ section_key: string; content: { slides?: Array<{ image: string; eyebrow: string; name: string; price: string }> } }>;
           reviews?: Array<{ id: string; rating: number; body: string; profiles?: { full_name?: string } | null; products?: { name_bn?: string } | null }>;
-          settings?: Array<{ key: string; value: Record<string, unknown> }>;
+          settings?: Array<{ key: string; value: StoreSettings }>;
         };
         if (!response.ok || !data.configured) return;
         const storeSettings = data.settings?.find((setting) => setting.key === "store")?.value;
-        if (storeSettings?.logo_url) setStoreLogoUrl(String(storeSettings.logo_url));
+        if (storeSettings) setStore(storeSettings);
+        const symbol = currencySymbol(storeSettings?.currency);
         if (data.categories?.length) setDynamicCategories(data.categories.slice(0, 4).map((category, index) => ({ name: category.name_bn, count: category.description || "পণ্য দেখুন", image: category.image_path || categories[index % categories.length].image, tone: ["gold", "green", "rust", "cream"][index % 4] })));
-        if (data.products?.length) setDynamicProducts(data.products.slice(0, 8).map((product) => { const ratings = product.reviews || []; const average = ratings.length ? ratings.reduce((sum, review) => sum + review.rating, 0) / ratings.length : 0; return { id: product.slug || product.id, name: product.name_bn, meta: product.weight_grams ? `${product.weight_grams.toLocaleString("bn-BD")} গ্রাম` : product.sku, price: `৳${Number(product.base_price).toLocaleString("bn-BD")}`, numericPrice: Number(product.base_price), oldPrice: product.compare_at_price ? `৳${Number(product.compare_at_price).toLocaleString("bn-BD")}` : "", discount: product.compare_at_price ? `–${Math.round((1 - Number(product.base_price) / Number(product.compare_at_price)) * 100)}%` : "", rating: average ? average.toFixed(1) : "নতুন", reviews: String(ratings.length), image: product.product_media?.[0]?.storage_path || products[0].image, badge: product.compare_at_price ? "বিশেষ মূল্য" : "নতুন" }; }));
+        if (data.products?.length) setDynamicProducts(data.products.slice(0, 8).map((product) => { const ratings = product.reviews || []; const average = ratings.length ? ratings.reduce((sum, review) => sum + review.rating, 0) / ratings.length : 0; return { id: product.slug || product.id, name: product.name_bn, meta: product.weight_grams ? `${product.weight_grams.toLocaleString("bn-BD")} গ্রাম` : product.sku, price: `${symbol}${Number(product.base_price).toLocaleString("bn-BD")}`, numericPrice: Number(product.base_price), oldPrice: product.compare_at_price ? `${symbol}${Number(product.compare_at_price).toLocaleString("bn-BD")}` : "", discount: product.compare_at_price ? `–${Math.round((1 - Number(product.base_price) / Number(product.compare_at_price)) * 100)}%` : "", rating: average ? average.toFixed(1) : "নতুন", reviews: String(ratings.length), image: product.product_media?.[0]?.storage_path || products[0].image, badge: product.compare_at_price ? "বিশেষ মূল্য" : "নতুন" }; }));
         const hero = data.sections?.find((section) => section.section_key === "hero");
         if (hero?.content.slides?.length) { setDynamicHeroSlides(hero.content.slides.map((slide) => ({ ...slide, alt: slide.name }))); setHeroSlide(0); }
         if (data.reviews?.length) setDynamicReviews(data.reviews.slice(0, 3).map((review) => { const name = review.profiles?.full_name || "যাচাইকৃত ক্রেতা"; return { quote: review.body, name, product: review.products?.name_bn || "তরুণ মার্ট পণ্য", initials: name.slice(0, 2) }; }));
@@ -368,7 +371,7 @@ export default function HomePage() {
           <div><h3>সহায়তা</h3><a href="#">অর্ডার ট্র্যাক করুন</a><a href="#">ডেলিভারি তথ্য</a><a href="#">রিটার্ন ও রিফান্ড</a><a href="#">প্রশ্নোত্তর</a><a href="#">যোগাযোগ</a></div>
           <div><h3>যোগাযোগ</h3><p>বারিক ভিলা, ১১/১ ফোল্ডার স্ট্রিট,<br />ওয়ারী, ঢাকা–১২০৩</p><a className="contact" href="tel:+8801886494257">+৮৮০ ১৮৮৬–৪৯৪২৫৭</a><a className="contact" href="mailto:admin@torunmart.com">admin@torunmart.com</a></div>
         </div>
-        <div className="container footer-bottom"><p>© ২০২৬ তরুণ মার্ট। সর্বস্বত্ব সংরক্ষিত।</p><div><a href="#">গোপনীয়তা</a><a href="#">শর্তাবলি</a></div><span>নিরাপদ পেমেন্ট · ক্যাশ অন ডেলিভারি</span></div>
+        <div className="container footer-bottom"><p>{store.footer || "© ২০২৬ তরুণ মার্ট। সর্বস্বত্ব সংরক্ষিত।"}</p><div><a href="#">গোপনীয়তা</a><a href="#">শর্তাবলি</a></div><span>নিরাপদ পেমেন্ট · ক্যাশ অন ডেলিভারি</span></div>
       </footer>
 
       <nav className="mobile-bottom" aria-label="মোবাইল নেভিগেশন"><a className="active" href="#"><Home /><span>হোম</span></a><a href="#categories"><Menu /><span>ক্যাটাগরি</span></a><a href="#"><Search /><span>খুঁজুন</span></a><a href="#"><Heart /><span>পছন্দ</span></a><button onClick={openCart}><ShoppingBag />{count > 0 && <i>{count}</i>}<span>কার্ট</span></button></nav>

@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
+import { OWNER, requireStaff } from "@/lib/supabase/admin-auth";
 
-async function authorized() {
-  if (!isSupabaseConfigured) return { error: NextResponse.json({ error: "Supabase is not configured" }, { status: 503 }) };
-  const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
-  if (!userId) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  const { data: staff } = await supabase.from("staff_members").select("role,is_active").eq("user_id", userId).single();
-  if (!staff?.is_active || !["super_admin", "admin"].includes(staff.role)) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  return { supabase, userId };
-}
+const authorized = () => requireStaff(OWNER);
 
 export async function GET() {
   const auth = await authorized();
