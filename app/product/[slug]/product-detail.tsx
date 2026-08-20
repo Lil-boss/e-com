@@ -35,7 +35,7 @@ import {
   ZoomIn,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import "./product.css";
 
 const fallbackGallery = [
@@ -53,6 +53,47 @@ const fallbackRelated = [
 
 function ProductLogo({ logoUrl = "" }: { logoUrl?: string }) {
   return <Link className="pd-logo" href="/">{logoUrl ? <img src={logoUrl} alt="Torun Mart" /> : <><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></>}</Link>;
+}
+
+/** Review submission. Signed-in only, because the insert policy keys on auth.uid(). */
+function ReviewForm({ slug }: { slug: string }) {
+  const [rating, setRating] = useState(5);
+  const [state, setState] = useState<"idle" | "sending" | "done">("idle");
+  const [message, setMessage] = useState("");
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setState("sending");
+    setMessage("");
+    const response = await fetch("/api/reviews", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug, rating, title: data.get("title"), body: data.get("body") }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { setState("idle"); setMessage(result.error || "রিভিউ পাঠানো যায়নি"); return; }
+    setState("done");
+  };
+
+  if (state === "done") {
+    return <p className="review-thanks"><Check /> ধন্যবাদ! মডারেশনের পর আপনার রিভিউটি প্রকাশ করা হবে।</p>;
+  }
+
+  return (
+    <form className="review-form" onSubmit={submit}>
+      <div className="review-stars" role="radiogroup" aria-label="রেটিং">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button key={value} type="button" role="radio" aria-checked={rating === value} aria-label={`${value} স্টার`} className={value <= rating ? "on" : ""} onClick={() => setRating(value)}>★</button>
+        ))}
+      </div>
+      <input name="title" placeholder="সংক্ষিপ্ত শিরোনাম (ঐচ্ছিক)" maxLength={120} />
+      <textarea name="body" rows={4} required minLength={10} placeholder="পণ্যটি নিয়ে আপনার অভিজ্ঞতা লিখুন..." />
+      {message && <p className="review-error">{message}</p>}
+      <button type="submit" disabled={state === "sending"}>{state === "sending" ? "পাঠানো হচ্ছে..." : "রিভিউ জমা দিন"}</button>
+      <small>রিভিউ দিতে <Link href="/account">লগইন</Link> করা প্রয়োজন।</small>
+    </form>
+  );
 }
 
 export default function ProductDetail() {
@@ -198,7 +239,7 @@ export default function ProductDetail() {
         {tab === "details" && <div className="detail-content"><div><span className="pd-eyebrow">নির্বাচিত মানের পণ্য</span><h2>{productInfo.name}</h2><p>{productInfo.description}</p><div className="benefit-list"><span><Check /> যাচাইকৃত সরবরাহকারীর পণ্য</span><span><Check /> নিরাপদ ও যত্নশীল প্যাকেজিং</span><span><Check /> সারা দেশে দ্রুত ডেলিভারি</span><span><Check /> সহজ রিটার্ন সহায়তা</span></div></div><aside><h3>এক নজরে</h3><dl><div><dt>ক্যাটাগরি</dt><dd>{productInfo.category}</dd></div><div><dt>SKU</dt><dd>{productInfo.sku}</dd></div><div><dt>ওজন</dt><dd>{productInfo.weight ? `${productInfo.weight.toLocaleString("bn-BD")} গ্রাম` : "প্রযোজ্য নয়"}</dd></div><div><dt>স্টক</dt><dd>{productInfo.stock > 0 ? `${productInfo.stock.toLocaleString("bn-BD")}টি পাওয়া যাচ্ছে` : "স্টক শেষ"}</dd></div><div><dt>সংরক্ষণ</dt><dd>শুষ্ক ও ঠান্ডা স্থানে</dd></div></dl></aside></div>}
         {tab === "use" && <div className="simple-tab"><h2>ব্যবহার ও সংরক্ষণ</h2><p>সকালে কুসুম গরম পানি, দুধ, রুটি বা নাশতার সঙ্গে পরিমাণমতো ব্যবহার করুন। সরাসরি রোদ থেকে দূরে, শুষ্ক ও ঠান্ডা স্থানে ঢাকনা বন্ধ করে রাখুন। প্রাকৃতিক মধুতে সময়ের সঙ্গে দানা বাঁধা স্বাভাবিক।</p></div>}
         {tab === "delivery" && <div className="simple-tab"><h2>ডেলিভারি ও রিটার্ন</h2><p>ঢাকার ভেতরে ২–৩ এবং ঢাকার বাইরে ৩–৫ কার্যদিবসে ডেলিভারি। ভুল, ভাঙা বা ত্রুটিপূর্ণ পণ্য পেলে গ্রহণের সাত দিনের মধ্যে ছবি বা ভিডিওসহ আমাদের জানান।</p></div>}
-        {tab === "reviews" && <div className="simple-tab" id="reviews"><h2>ক্রেতাদের মতামত</h2><p>৩৮ জন যাচাইকৃত ক্রেতার গড় রেটিং ৪.৯/৫। স্বাদ, ঘ্রাণ এবং প্যাকেজিং নিয়ে ক্রেতারা সবচেয়ে বেশি সন্তুষ্ট।</p></div>}
+        {tab === "reviews" && <div className="simple-tab" id="reviews"><h2>ক্রেতাদের মতামত</h2><p>পণ্যটি কিনে থাকলে আপনার অভিজ্ঞতা জানান। মডারেশনের পর রিভিউটি এখানে দেখা যাবে।</p><ReviewForm slug={productInfo.id} /></div>}
       </section>
 
       <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Link href={`/product/${item.id}`} aria-label={`${item.name} বিস্তারিত দেখুন`}><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /></Link><button onClick={() => wishlist.toggle(item.id)} aria-pressed={wishlist.has(item.id)} aria-label={`${item.name} পছন্দের তালিকায়`}><Heart fill={wishlist.has(item.id) ? "currentColor" : "none"} /></button></div><p>{item.meta}</p><h3><Link href={`/product/${item.id}`}>{item.name}</Link></h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
