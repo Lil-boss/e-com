@@ -11,3 +11,4 @@
 .order-invoice { display: grid; place-items: center; width: 34px; height: 34px; margin-left: 12px; border: 1px solid var(--ac-line, #dfe4df); border-radius: 8px; color: var(--ac-green, #103d2a); }
 .order-invoice:hover { background: #f1f5f1; }
 .order-invoice svg { width: 16px; height: 16px; }
+.account-logo .brand-logo-image { max-width: 170px; height: 44px; }

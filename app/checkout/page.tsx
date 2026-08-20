@@ -63,12 +63,12 @@ export default function CheckoutPage() {
   };
 
   if (placed) {
-    return <main className="checkout-page"><header className="checkout-header"><div className="checkout-container"><CheckoutLogo /><span><LockKeyhole /> নিরাপদ চেকআউট</span></div></header><section className="order-success"><span><CircleCheckBig /></span><p className="checkout-eyebrow">অর্ডার সফল হয়েছে</p><h1>ধন্যবাদ! আপনার অর্ডারটি<br />আমরা পেয়েছি।</h1><p>অর্ডারটি নিশ্চিত করতে আমাদের প্রতিনিধি শিগগিরই আপনার সঙ্গে যোগাযোগ করবেন।</p><div><small>অর্ডার নম্বর</small><strong>{orderNumber}</strong></div><div className="success-steps"><span><Check /> অর্ডার গ্রহণ করা হয়েছে</span><span><PackageCheck /> প্যাকিংয়ের জন্য প্রস্তুত হচ্ছে</span><span><Truck /> ডেলিভারি আপডেট ফোনে পাবেন</span></div>{orderId && <Link className="invoice-link" href={`/invoice/${orderId}`}>ইনভয়েস দেখুন ও প্রিন্ট করুন <PrinterIcon size={16} /></Link>}<Link href="/">হোমে ফিরে যান <ArrowLeft /></Link></section></main>;
+    return <main className="checkout-page"><header className="checkout-header"><div className="checkout-container"><CheckoutLogo logoUrl={store.logo_url} /><span><LockKeyhole /> নিরাপদ চেকআউট</span></div></header><section className="order-success"><span><CircleCheckBig /></span><p className="checkout-eyebrow">অর্ডার সফল হয়েছে</p><h1>ধন্যবাদ! আপনার অর্ডারটি<br />আমরা পেয়েছি।</h1><p>অর্ডারটি নিশ্চিত করতে আমাদের প্রতিনিধি শিগগিরই আপনার সঙ্গে যোগাযোগ করবেন।</p><div><small>অর্ডার নম্বর</small><strong>{orderNumber}</strong></div><div className="success-steps"><span><Check /> অর্ডার গ্রহণ করা হয়েছে</span><span><PackageCheck /> প্যাকিংয়ের জন্য প্রস্তুত হচ্ছে</span><span><Truck /> ডেলিভারি আপডেট ফোনে পাবেন</span></div>{orderId && <Link className="invoice-link" href={`/invoice/${orderId}`}>ইনভয়েস দেখুন ও প্রিন্ট করুন <PrinterIcon size={16} /></Link>}<Link href="/">হোমে ফিরে যান <ArrowLeft /></Link></section></main>;
   }
 
   return (
     <main className="checkout-page">
-      <header className="checkout-header"><div className="checkout-container"><CheckoutLogo /><div className="checkout-progress"><span className="done"><i><Check /></i>কার্ট</span><b /><span className="active"><i>২</i>ঠিকানা ও পেমেন্ট</span><b /><span><i>৩</i>নিশ্চিতকরণ</span></div><span className="secure"><LockKeyhole /> নিরাপদ চেকআউট</span></div></header>
+      <header className="checkout-header"><div className="checkout-container"><CheckoutLogo logoUrl={store.logo_url} /><div className="checkout-progress"><span className="done"><i><Check /></i>কার্ট</span><b /><span className="active"><i>২</i>ঠিকানা ও পেমেন্ট</span><b /><span><i>৩</i>নিশ্চিতকরণ</span></div><span className="secure"><LockKeyhole /> নিরাপদ চেকআউট</span></div></header>
       <div className="checkout-container checkout-breadcrumb"><Link href="/"><ChevronLeft /> কেনাকাটায় ফিরে যান</Link></div>
 
       {items.length === 0 ? <section className="checkout-empty"><span><ShoppingBag /></span><h1>আপনার কার্ট খালি</h1><p>চেকআউট করতে প্রথমে কিছু পণ্য কার্টে যোগ করুন।</p><Link href="/products">পণ্য দেখুন <ArrowRight /></Link></section> :
@@ -102,6 +102,13 @@ export default function CheckoutPage() {
   );
 }
 
-function CheckoutLogo() {
-  return <Link className="checkout-logo" href="/"><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></Link>;
+function CheckoutLogo({ logoUrl = "" }: { logoUrl?: string }) {
+  return (
+    <Link className="checkout-logo" href="/" aria-label="Torun Mart">
+      {logoUrl
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img className="brand-logo-image" src={logoUrl} alt="Torun Mart" />
+        : <><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></>}
+    </Link>
+  );
 }

@@ -119,13 +119,13 @@ export default function AccountPage() {
 
   if (!user) return (
     <main className="account-page auth-page">
-      <header className="account-header"><div className="account-container"><AccountLogo /><Link href="/"><ChevronLeft /> হোমে ফিরুন</Link></div></header>
+      <header className="account-header"><div className="account-container"><AccountLogo logoUrl={store.logo_url} /><Link href="/"><ChevronLeft /> হোমে ফিরুন</Link></div></header>
       <section className="auth-layout">
         <div className="auth-story"><span className="auth-shape one" /><span className="auth-shape two" /><div><span className="auth-eyebrow"><ShieldCheck /> নিরাপদ সদস্য অ্যাকাউন্ট</span><h1>আপনার কেনাকাটা,<br /><em>আরও সহজ।</em></h1><p>অর্ডার ট্র্যাক করুন, পছন্দের পণ্য সংরক্ষণ করুন এবং আগের অর্ডার এক ক্লিকে আবার কিনুন।</p><ul><li><span><PackageCheck /></span><p><strong>অর্ডারের লাইভ আপডেট</strong><small>প্যাকিং থেকে ডেলিভারি পর্যন্ত</small></p></li><li><span><MapPin /></span><p><strong>ঠিকানা সংরক্ষণ</strong><small>পরের বার আরও দ্রুত চেকআউট</small></p></li><li><span><Heart /></span><p><strong>পছন্দের তালিকা</strong><small>প্রিয় পণ্যগুলো এক জায়গায়</small></p></li></ul></div>
         </div>
         <div className="auth-panel">
           <div className="auth-card">
-            <AccountLogo />
+            <AccountLogo logoUrl={store.logo_url} />
             <div className="auth-tabs"><button className={mode === "login" ? "active" : ""} onClick={() => changeMode("login")}>লগইন</button><button className={mode === "register" ? "active" : ""} onClick={() => changeMode("register")}>নতুন অ্যাকাউন্ট</button></div>
             <div className="auth-title"><h2>{mode === "login" ? (otpSent ? "OTP যাচাই করুন" : "মোবাইল দিয়ে লগইন") : "আপনার অ্যাকাউন্ট খুলুন"}</h2><p>{mode === "login" ? (otpSent ? `${otpPhone} নম্বরে পাঠানো ৬ সংখ্যার কোডটি লিখুন।` : "শুধু আপনার মোবাইল নম্বর দিয়েই লগইন করুন।") : "মাত্র এক মিনিটে তরুণ মার্টে যোগ দিন।"}</p></div>
             <form onSubmit={submitAuth}>
@@ -147,7 +147,7 @@ export default function AccountPage() {
 
   return (
     <main className="account-page dashboard-page">
-      <header className="account-header"><div className="account-container"><AccountLogo /><Link href="/"><ChevronLeft /> কেনাকাটায় ফিরুন</Link></div></header>
+      <header className="account-header"><div className="account-container"><AccountLogo logoUrl={store.logo_url} /><Link href="/"><ChevronLeft /> কেনাকাটায় ফিরুন</Link></div></header>
       <div className="account-container dashboard-heading"><div><span className="account-avatar">{user.name.slice(0, 1)}</span><div><p>স্বাগতম,</p><h1>{user.name}</h1></div></div><button onClick={logout}><LogOut /> লগআউট</button></div>
       <div className="account-container dashboard-grid">
         <aside className="account-sidebar"><nav><button className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}><CircleUserRound /> ওভারভিউ</button><button className={tab === "orders" ? "active" : ""} onClick={() => setTab("orders")}><ShoppingBag /> আমার অর্ডার <i>{orders?.length ?? 2}</i></button><button className={tab === "addresses" ? "active" : ""} onClick={() => setTab("addresses")}><MapPin /> সংরক্ষিত ঠিকানা</button><button className={tab === "wishlist" ? "active" : ""} onClick={() => setTab("wishlist")}><Heart /> পছন্দের তালিকা <i>2</i></button><button className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}><Settings /> প্রোফাইল সেটিংস</button></nav><div><ShieldCheck /><p><strong>সাহায্য প্রয়োজন?</strong><small>সকাল ৯টা–রাত ১০টা</small></p><a href={`tel:${supportPhone}`}>কল করুন</a></div></aside>
@@ -163,7 +163,16 @@ export default function AccountPage() {
   );
 }
 
-function AccountLogo() { return <Link className="account-logo" href="/"><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></Link>; }
+function AccountLogo({ logoUrl = "" }: { logoUrl?: string }) {
+  return (
+    <Link className="account-logo" href="/" aria-label="Torun Mart">
+      {logoUrl
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img className="brand-logo-image" src={logoUrl} alt="Torun Mart" />
+        : <><span><Leaf /></span><strong>তরুণ</strong><small>mart</small></>}
+    </Link>
+  );
+}
 
 function RecentOrders({ all = false, orders, currency }: { all?: boolean; orders: AccountOrder[] | null; currency?: string }) {
   const symbol = currencySymbol(currency);

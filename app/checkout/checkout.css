@@ -17,3 +17,4 @@
 
 .checkout-discount dd { color: #2f7a52; font-weight: 600; }
 .order-success .invoice-link { margin-right: 9px; border: 1px solid var(--co-line); background: #fff; color: var(--co-green); }
+.checkout-logo .brand-logo-image { max-width: 170px; height: 42px; }

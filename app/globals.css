@@ -429,3 +429,5 @@ img { object-fit: cover; }
   .catalogue-search { width: 100%; min-width: 0; margin-top: 20px; }
   .catalogue-tabs { overflow-x: auto; margin: 22px -24px 20px; padding: 0 24px; }
 }
+/* one saved logo, three page-local brand marks */
+.brand-logo-image { display: block; width: auto; max-width: 180px; height: 46px; object-fit: contain; object-position: left center; }
