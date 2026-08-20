@@ -1663,6 +1663,12 @@ function ContentCard({
   const [subtitle, setSubtitle] = useState(String(section.subtitle || ""));
   const [active, setActive] = useState(section.is_active !== false);
   const [saving, setSaving] = useState(false);
+  const sectionKey = String(section.section_key);
+  const initialContent = (section.content || {}) as { slides?: Array<Record<string, string>> } & Record<string, unknown>;
+  const [slides, setSlides] = useState<Array<Record<string, string>>>(initialContent.slides || []);
+  const [campaign, setCampaign] = useState<Record<string, unknown>>(initialContent);
+  const editSlide = (index: number, field: string, value: string) =>
+    setSlides(slides.map((slide, i) => (i === index ? { ...slide, [field]: value } : slide)));
   const save = async () => {
     if (!configured) {
       notify("Changes are not saved in preview mode");
@@ -1676,7 +1682,8 @@ function ContentCard({
         section_key: section.section_key,
         title,
         subtitle,
-        content: section.content || {},
+        // the section's own JSON, edited above rather than round-tripped untouched
+        content: sectionKey === "hero" ? { ...initialContent, slides } : sectionKey === "seasonal" ? campaign : initialContent,
         is_active: active,
       }),
     });
@@ -1713,6 +1720,35 @@ function ContentCard({
         Subtitle
         <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
       </label>
+      {sectionKey === "hero" && (
+        <div className="content-slides">
+          <strong>Slides</strong>
+          {slides.map((slide, slideIndex) => (
+            <div className="content-slide" key={slideIndex}>
+              <span>{slideIndex + 1}</span>
+              <input value={slide.name || ""} placeholder="Product name" onChange={(e) => editSlide(slideIndex, "name", e.target.value)} />
+              <input value={slide.price || ""} placeholder="Price line" onChange={(e) => editSlide(slideIndex, "price", e.target.value)} />
+              <input value={slide.eyebrow || ""} placeholder="Eyebrow" onChange={(e) => editSlide(slideIndex, "eyebrow", e.target.value)} />
+              <input value={slide.image || ""} placeholder="Image URL" onChange={(e) => editSlide(slideIndex, "image", e.target.value)} />
+              <button type="button" onClick={() => setSlides(slides.filter((_, i) => i !== slideIndex))} aria-label="Remove slide"><Trash2 /></button>
+            </div>
+          ))}
+          <button type="button" className="content-add" onClick={() => setSlides([...slides, { name: "", price: "", eyebrow: "", image: "" }])}>
+            <Plus /> Add slide
+          </button>
+        </div>
+      )}
+      {sectionKey === "seasonal" && (
+        <div className="content-slides">
+          <strong>Campaign</strong>
+          {(["description", "image", "price", "oldPrice", "cta"] as const).map((field) => (
+            <label key={field}>
+              {field}
+              <input value={String(campaign[field] ?? "")} onChange={(e) => setCampaign({ ...campaign, [field]: e.target.value })} />
+            </label>
+          ))}
+        </div>
+      )}
       <footer>
         <button type="button" onClick={() => window.open("/", "_blank")}>
           Preview

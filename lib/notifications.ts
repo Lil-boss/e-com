@@ -48,3 +48,31 @@ export async function notifyOrderPlaced(notice: OrderNotice) {
     return { sent: false, reason: "delivery failed" as const };
   }
 }
+
+/**
+ * Newsletter signup. Same webhook as orders, so addresses reach whatever list the
+ * store actually uses without this project owning a subscribers table.
+ */
+export async function notifySubscriber(email: string) {
+  const webhook = process.env.ORDER_NOTIFY_WEBHOOK_URL;
+  if (!webhook) {
+    console.info(`[newsletter] no ORDER_NOTIFY_WEBHOOK_URL set, would subscribe ${email}`);
+    return { sent: false, reason: "webhook not configured" as const };
+  }
+  try {
+    const response = await fetch(webhook, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(process.env.ORDER_NOTIFY_WEBHOOK_SECRET ? { authorization: `Bearer ${process.env.ORDER_NOTIFY_WEBHOOK_SECRET}` } : {}),
+      },
+      body: JSON.stringify({ event: "newsletter.subscribed", email }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error(`webhook responded ${response.status}`);
+    return { sent: true as const };
+  } catch (error) {
+    console.error("[newsletter] delivery failed:", error instanceof Error ? error.message : error);
+    return { sent: false, reason: "delivery failed" as const };
+  }
+}

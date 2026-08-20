@@ -63,6 +63,7 @@ export default function HomePage() {
   const [heroSlide, setHeroSlide] = useState(0);
   const [reviewPage, setReviewPage] = useState(0);
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
   const [categories, setCategories] = useState<CardCategory[]>(DEMO_CATEGORIES);
   const [products, setProducts] = useState<CardProduct[]>(DEMO_PRODUCTS);
   const [reviews, setReviews] = useState(DEMO_REVIEWS);
@@ -260,13 +261,21 @@ export default function HomePage() {
       <section className="newsletter" id="support">
         <div className="container newsletter-inner">
           <div><span>নতুন খবর, নতুন অফার</span><h2>ভালো পণ্যের খবর<br />সবার আগে পান।</h2></div>
-          {/* ponytail: subscriptions are acknowledged in the browser only, wire to a list table when marketing needs the addresses. */}
-          <form onSubmit={(event) => { event.preventDefault(); setSubscribed(true); }}>
+          <form onSubmit={async (event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const email = new FormData(form).get("email");
+            setSubscribeError("");
+            const response = await fetch("/api/newsletter", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
+            if (!response.ok) { const result = await response.json().catch(() => ({})); setSubscribeError(result.error || "সাবস্ক্রাইব করা যায়নি"); return; }
+            setSubscribed(true);
+            form.reset();
+          }}>
             <label>
               <input type="email" name="email" required placeholder="আপনার ইমেইল ঠিকানা" aria-label="ইমেইল ঠিকানা" />
               <button type="submit" aria-label="সাবস্ক্রাইব করুন">{subscribed ? <Check /> : <ArrowRight />}</button>
             </label>
-            <small>{subscribed ? "ধন্যবাদ! নতুন অফারের খবর আপনাকে জানানো হবে।" : "সাবস্ক্রাইব করলে আপনি আমাদের গোপনীয়তা নীতিতে সম্মতি দিচ্ছেন।"}</small>
+            <small>{subscribeError || (subscribed ? "ধন্যবাদ! নতুন অফারের খবর আপনাকে জানানো হবে।" : "সাবস্ক্রাইব করলে আপনি আমাদের গোপনীয়তা নীতিতে সম্মতি দিচ্ছেন।")}</small>
           </form>
         </div>
       </section>
