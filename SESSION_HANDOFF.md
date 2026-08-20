@@ -165,7 +165,7 @@ Modules present:
 - Saved name, tagline, address, phone, email, website, currency and footer text feed the
   storefront footer, checkout and account pages (`lib/store-settings.ts`).
 - Logo files upload to the public `product-media` Supabase bucket under `store/`.
-- Clicking `Update Details` persists `logo_url` and other values into public `store_settings.store`.
+- Clicking the save button (`তথ্য সংরক্ষণ করুন`) persists `logo_url` and other values into public `store_settings.store`.
 - API: `app/api/admin/settings/route.ts`
 
 ## Supabase
