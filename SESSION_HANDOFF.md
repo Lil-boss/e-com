@@ -14,7 +14,13 @@ This file restores project context, not hidden model memory. The current codebas
 
 - Workspace: `/home/shaon/Documents/torun-mart`
 - Stack: Next.js 16.3.1 App Router, React, TypeScript, Supabase, Lucide icons
-- Language/UI: primarily Bengali
+- Language/UI: storefront in Bengali, admin panel in English
+  - `lib/order-status.ts` ships both label maps: `statusLabel`/`paymentLabel` (Bengali,
+    storefront) and `statusLabelEn`/`paymentLabelEn` (admin). `admin-modules.tsx`
+    re-exports the English ones under the plain names for every admin consumer.
+  - Admin numbers and dates use `en-US`/`en-GB`; the storefront keeps `bn-BD`.
+  - Store content the admin edits (product names, category names, homepage section
+    copy, company name, tagline, footer) stays Bengali, it is storefront copy.
 - Font: Anek Bangla
 - Storefront inspiration: `https://torunmart.com/`, redesigned rather than copied
 - Main plan: `ADMIN_PANEL_PLAN.md`

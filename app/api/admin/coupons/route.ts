@@ -19,10 +19,10 @@ function fields(body: Record<string, unknown>) {
 }
 
 function invalid(values: ReturnType<typeof fields>) {
-  if (!/^[A-Z0-9_-]{3,24}$/.test(values.code)) return "কোড ৩–২৪ অক্ষরের ইংরেজি বড় হাতের অক্ষর/সংখ্যা হতে হবে";
-  if (!(values.discount_value > 0)) return "ছাড়ের পরিমাণ ০ এর বেশি হতে হবে";
-  if (values.discount_type === "percentage" && values.discount_value > 100) return "শতকরা ছাড় ১০০ এর বেশি হতে পারে না";
-  if (values.starts_at && values.ends_at && values.starts_at > values.ends_at) return "শুরুর তারিখ শেষ তারিখের পরে হতে পারে না";
+  if (!/^[A-Z0-9_-]{3,24}$/.test(values.code)) return "Code must be 3-24 uppercase letters or digits";
+  if (!(values.discount_value > 0)) return "Discount amount must be greater than 0";
+  if (values.discount_type === "percentage" && values.discount_value > 100) return "Percentage discount cannot exceed 100";
+  if (values.starts_at && values.ends_at && values.starts_at > values.ends_at) return "Start date cannot be after the end date";
   return null;
 }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
   const { data, error } = await auth.supabase.from("coupons").insert(values).select().single();
   if (!error) await auth.supabase.from("audit_logs").insert({ actor_id: auth.userId, action: "coupon.created", entity_type: "coupon", entity_id: data.id, after_data: data });
-  return error ? NextResponse.json({ error: error.message.includes("duplicate") ? "এই কোডটি আগেই আছে" : error.message }, { status: 400 }) : NextResponse.json(data, { status: 201 });
+  return error ? NextResponse.json({ error: error.message.includes("duplicate") ? "That code already exists" : error.message }, { status: 400 }) : NextResponse.json(data, { status: 201 });
 }
 
 export async function PATCH(request: NextRequest) {

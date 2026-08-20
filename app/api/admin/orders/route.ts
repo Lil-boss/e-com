@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     if (stockFunction) {
       const { error: stockError } = await auth.supabase.rpc(stockFunction, { p_order_id: body.id });
       // Surfaced rather than swallowed: a failed RPC leaves stock wrong while the status looks fine.
-      if (stockError) stockWarning = `স্ট্যাটাস বদলেছে, তবে স্টক হালনাগাদ হয়নি: ${stockError.message}`;
+      if (stockError) stockWarning = `Status changed, but stock was not updated: ${stockError.message}`;
     }
     await auth.supabase.from("order_status_events").insert({ order_id: body.id, from_status: order.status, to_status: body.status, note: body.note || null, created_by: auth.userId });
   }

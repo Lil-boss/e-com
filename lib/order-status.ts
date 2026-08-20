@@ -7,3 +7,15 @@ export const statusLabel: Record<string, string> = {
 export const paymentLabel: Record<string, string> = {
   pending: "বকেয়া", authorized: "অনুমোদিত", paid: "পরিশোধিত", failed: "ব্যর্থ", refunded: "রিফান্ড", partially_refunded: "আংশিক রিফান্ড",
 };
+
+/** Admin panel runs in English; the storefront keeps the Bengali maps above. */
+export const statusLabelEn: Record<string, string> = {
+  pending: "New", confirmed: "Confirmed", processing: "Processing", packed: "Packed", shipped: "Shipped",
+  delivered: "Delivered", cancelled: "Cancelled", return_requested: "Return requested", returned: "Returned",
+  refunded: "Refunded", replaced: "Replaced", published: "Published", draft: "Draft", archived: "Archived",
+  approved: "Approved", rejected: "Rejected", flagged: "Flagged",
+};
+export const paymentLabelEn: Record<string, string> = {
+  pending: "Unpaid", authorized: "Authorized", paid: "Paid", failed: "Failed",
+  refunded: "Refunded", partially_refunded: "Partially refunded",
+};

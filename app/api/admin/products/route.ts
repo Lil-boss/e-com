@@ -85,7 +85,7 @@ async function syncVariants(supabase: Awaited<ReturnType<typeof createClient>>, 
     const current = existing?.find((variant) => variant.id === row.variant_id);
     const inventory = current?.inventory as { on_hand?: number; reserved?: number } | null;
     const reserved = inventory?.reserved || 0;
-    if (current && stock < reserved) return `"${values.title}" ভ্যারিয়েন্টে ${reserved}টি সংরক্ষিত আছে, স্টক তার কম দেওয়া যাবে না`;
+    if (current && stock < reserved) return `Variant "${values.title}" has ${reserved} reserved; stock cannot go below that`;
 
     if (current) {
       const { error } = await supabase.from("product_variants").update(values).eq("id", current.id);
@@ -108,7 +108,7 @@ async function syncVariants(supabase: Awaited<ReturnType<typeof createClient>>, 
 
   const removed = (existing || []).filter((variant) => !keptIds.includes(variant.id));
   const busy = removed.find((variant) => ((variant.inventory as { reserved?: number } | null)?.reserved || 0) > 0);
-  if (busy) return `"${busy.title}" ভ্যারিয়েন্টের বিপরীতে অসম্পূর্ণ অর্ডার আছে, এটি মুছে ফেলা যাবে না`;
+  if (busy) return `Variant "${busy.title}" has open orders against it and cannot be deleted`;
   if (removed.length) await supabase.from("product_variants").delete().in("id", removed.map((variant) => variant.id));
   return null;
 }

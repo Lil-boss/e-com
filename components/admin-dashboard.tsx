@@ -138,17 +138,17 @@ type VariantDraft = {
   stock: string;
 };
 const nav = [
-  { id: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
-  { id: "orders", label: "অর্ডার", icon: ShoppingBag },
-  { id: "products", label: "পণ্য", icon: Package },
-  { id: "inventory", label: "ইনভেন্টরি", icon: Boxes },
-  { id: "categories", label: "ক্যাটাগরি", icon: Tags },
-  { id: "customers", label: "ক্রেতা", icon: Users },
-  { id: "promotions", label: "প্রমোশন", icon: Gift },
-  { id: "reviews", label: "রিভিউ", icon: MessageSquareText },
-  { id: "content", label: "স্টোরফ্রন্ট কনটেন্ট", icon: FileText },
-  { id: "reports", label: "রিপোর্ট", icon: BarChart3 },
-  { id: "settings", label: "সেটিংস", icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "products", label: "Products", icon: Package },
+  { id: "inventory", label: "Inventory", icon: Boxes },
+  { id: "categories", label: "Categories", icon: Tags },
+  { id: "customers", label: "Customers", icon: Users },
+  { id: "promotions", label: "Promotions", icon: Gift },
+  { id: "reviews", label: "Reviews", icon: MessageSquareText },
+  { id: "content", label: "Storefront content", icon: FileText },
+  { id: "reports", label: "Reports", icon: BarChart3 },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 export function AdminDashboard({
   configured,
@@ -227,7 +227,7 @@ export function AdminDashboard({
       });
       const data = await response.json();
       if (!response.ok) {
-        notify(data.error || "পণ্য সংরক্ষণ হয়নি");
+        notify(data.error || "Product was not saved");
         setSaving(false);
         return;
       }
@@ -265,7 +265,7 @@ export function AdminDashboard({
             : product,
         ),
       );
-      notify("প্রিভিউ মোডে পণ্য আপডেট হয়েছে");
+      notify("Product updated in preview mode");
     } else {
       setProducts((current) => [
         {
@@ -281,7 +281,7 @@ export function AdminDashboard({
         },
         ...current,
       ]);
-      notify("প্রিভিউ মোডে পণ্য যোগ হয়েছে");
+      notify("Product added in preview mode");
     }
     setSaving(false);
     setProductModal(false);
@@ -301,7 +301,7 @@ export function AdminDashboard({
     const product = products.find((item) => item.id === id);
     if (
       !window.confirm(
-        `“${product?.name_bn || "এই পণ্য"}” স্থায়ীভাবে মুছে ফেলতে চান? এই কাজটি ফেরানো যাবে না।`,
+        `Delete “${product?.name_bn || "this product"}” permanently? This cannot be undone.`,
       )
     )
       return;
@@ -311,12 +311,12 @@ export function AdminDashboard({
       });
       if (!response.ok) {
         const data = await response.json();
-        notify(data.error || "পণ্য মুছে ফেলা যায়নি");
+        notify(data.error || "Product could not be deleted");
         return;
       }
     }
     setProducts((current) => current.filter((p) => p.id !== id));
-    notify("পণ্য মুছে ফেলা হয়েছে");
+    notify("Product deleted");
   };
   const openCreate = () => {
     setEditingProduct(null);
@@ -355,7 +355,7 @@ export function AdminDashboard({
             />
           ) : (<>
             <span><Leaf /></span>
-            <strong>তরুণ</strong>
+            <strong>Torun</strong>
             <small>ADMIN</small>
           </>)}
           <button onClick={() => setSidebar(false)}>
@@ -405,18 +405,18 @@ export function AdminDashboard({
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="পণ্য বা SKU খুঁজুন..."
-              aria-label="পণ্য খুঁজুন"
+              placeholder="Search products or SKU..."
+              aria-label="Search products"
             />
           </form>
           <div>
             <Link href="/" target="_blank">
-              <Eye /> স্টোর দেখুন
+              <Eye /> View store
             </Link>
             <button
               type="button"
               onClick={() => setModule("orders")}
-              aria-label={`${pending} টি অর্ডার অপেক্ষায়`}
+              aria-label={`${pending} orders waiting`}
             >
               <Bell />
               {pending > 0 && <i>{bn(pending)}</i>}
@@ -430,8 +430,8 @@ export function AdminDashboard({
             <p>
               <strong>Supabase preview mode</strong>
               <span>
-                লাইভ ডেটা ও স্থায়ী পরিবর্তনের জন্য <code>.env.local</code>-এ
-                Supabase credentials যোগ করে migration ও seed চালান।
+                For live data and permanent changes, add the Supabase credentials to{" "}
+                <code>.env.local</code>, then run the migrations and seed.
               </span>
             </p>
             <Link href="/admin/login">
@@ -508,9 +508,9 @@ export function AdminDashboard({
           >
             <header>
               <div>
-                <p>ক্যাটালগ</p>
+                <p>Catalogue</p>
                 <h2>
-                  {editingProduct ? "পণ্য সম্পাদনা করুন" : "নতুন পণ্য যোগ করুন"}
+                  {editingProduct ? "Edit product" : "Add new product"}
                 </h2>
               </div>
               <button
@@ -525,7 +525,7 @@ export function AdminDashboard({
             </header>
             <div className="admin-form-grid">
               <label className="full">
-                পণ্যের বাংলা নাম *
+                Product name in Bengali *
                 <input
                   name="name_bn"
                   required
@@ -545,7 +545,7 @@ export function AdminDashboard({
                 />
               </label>
               <label>
-                বিক্রয় মূল্য *
+                Selling price *
                 <input
                   name="price"
                   type="number"
@@ -556,7 +556,7 @@ export function AdminDashboard({
                 />
               </label>
               <label>
-                আগের মূল্য
+                Compare-at price
                 <input
                   name="compare_at_price"
                   type="number"
@@ -572,7 +572,7 @@ export function AdminDashboard({
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="ঐচ্ছিক"
+                  placeholder="Optional"
                   defaultValue={editingProduct?.discount ?? ""}
                 />
               </label>
@@ -586,15 +586,15 @@ export function AdminDashboard({
                       : String(editingProduct.price_includes_vat)
                   }
                 >
-                  <option value="">নির্ধারিত নয়</option>
-                  <option value="true">VAT-সহ</option>
-                  <option value="false">VAT ছাড়া</option>
+                  <option value="">Not specified</option>
+                  <option value="true">VAT inclusive</option>
+                  <option value="false">VAT exclusive</option>
                 </select>
               </label>
               <label>
                 UOM
                 <select name="uom" defaultValue={editingProduct?.uom || ""}>
-                  <option value="">নির্বাচন করুন</option>
+                  <option value="">Select</option>
                   <option value="piece">Piece</option>
                   <option value="pack">Pack</option>
                   <option value="kg">Kilogram</option>
@@ -612,17 +612,17 @@ export function AdminDashboard({
                   type="number"
                   min="0"
                   step="0.001"
-                  placeholder="যেমন: 500"
+                  placeholder="e.g. 500"
                   defaultValue={editingProduct?.uom_value ?? ""}
                 />
               </label>
               <label>
-                ক্যাটাগরি
+                Categories
                 <select
                   name="category_id"
                   defaultValue={editingProduct?.category_id || ""}
                 >
-                  <option value="">ক্যাটাগরি ছাড়া</option>
+                  <option value="">No category</option>
                   {categories.map((category) => (
                     <option
                       key={String(category.id)}
@@ -634,7 +634,7 @@ export function AdminDashboard({
                 </select>
               </label>
               <label>
-                ওজন (গ্রাম)
+                Weight (grams)
                 <input
                   name="weight_grams"
                   type="number"
@@ -677,7 +677,7 @@ export function AdminDashboard({
                 />
               </label>
               <label>
-                স্টক
+                Stock
                 <input
                   name="stock"
                   type="number"
@@ -687,7 +687,7 @@ export function AdminDashboard({
                 />
               </label>
               <label>
-                লো স্টক সতর্কতা
+                Low stock alert
                 <input
                   name="low_stock_threshold"
                   type="number"
@@ -698,10 +698,10 @@ export function AdminDashboard({
               <section className="variant-builder full">
                 <header>
                   <div>
-                    <strong>Color ও Size variants</strong>
+                    <strong>Color and Size variants</strong>
                     <small>
-                      Fashion product হলে একই পণ্যের প্রতিটি color/size
-                      combination যোগ করুন।
+                      For a fashion product, add every color/size
+                      combination of the same product.
                     </small>
                   </div>
                   <button
@@ -721,7 +721,7 @@ export function AdminDashboard({
                     }
                   >
                     <Plus />
-                    Variant যোগ করুন
+                    Add variant
                   </button>
                 </header>
                 {variantRows.map((variant, index) => (
@@ -729,7 +729,7 @@ export function AdminDashboard({
                     <span>{index + 1}</span>
                     <input
                       aria-label="Color"
-                      placeholder="Color — যেমন: Black"
+                      placeholder="Color — e.g.: Black"
                       value={variant.color}
                       onChange={(event) =>
                         updateVariant(variant.id, "color", event.target.value)
@@ -737,7 +737,7 @@ export function AdminDashboard({
                     />
                     <input
                       aria-label="Size"
-                      placeholder="Size — যেমন: XL"
+                      placeholder="Size — e.g.: XL"
                       value={variant.size}
                       onChange={(event) =>
                         updateVariant(variant.id, "size", event.target.value)
@@ -774,7 +774,7 @@ export function AdminDashboard({
                     />
                     <button
                       type="button"
-                      aria-label="Variant সরান"
+                      aria-label="Remove variant"
                       onClick={() =>
                         setVariantRows((rows) =>
                           rows.filter((row) => row.id !== variant.id),
@@ -787,18 +787,17 @@ export function AdminDashboard({
                 ))}
                 {!variantRows.length && (
                   <p>
-                    কোনো variant যোগ করা হয়নি। সাধারণ পণ্যের জন্য এটি খালি
-                    রাখুন।
+                    No variants added. Leave this empty for a simple product.
                   </p>
                 )}
               </section>
               <label className="full">
-                একাধিক ছবির URL
+                Image URLs
                 <textarea
                   name="image_paths"
                   rows={4}
                   placeholder={
-                    "প্রতি লাইনে একটি URL দিন\nhttps://example.com/image-1.jpg\nhttps://example.com/image-2.jpg"
+                    "One image URL per line\nhttps://example.com/image-1.jpg\nhttps://example.com/image-2.jpg"
                   }
                   defaultValue={(
                     editingProduct?.images || [editingProduct?.image || ""]
@@ -807,12 +806,11 @@ export function AdminDashboard({
                     .join("\n")}
                 />
                 <small>
-                  প্রতি লাইনে একটি URL অথবা comma দিয়ে আলাদা করুন। প্রথম ছবিটি
-                  cover হবে।
+                  One URL per line, or comma separated. The first image is the cover.
                 </small>
               </label>
               <label className="full">
-                সংক্ষিপ্ত বর্ণনা
+                Short description
                 <textarea
                   name="short_description"
                   rows={3}
@@ -820,14 +818,14 @@ export function AdminDashboard({
                 />
               </label>
               <label>
-                স্ট্যাটাস
+                Status
                 <select
                   name="status"
                   defaultValue={editingProduct?.status || "draft"}
                 >
-                  <option value="draft">ড্রাফট</option>
-                  <option value="published">প্রকাশিত</option>
-                  <option value="archived">আর্কাইভ</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
                 </select>
               </label>
             </div>
@@ -839,14 +837,14 @@ export function AdminDashboard({
                   setEditingProduct(null);
                 }}
               >
-                বাতিল
+                Cancel
               </button>
               <button disabled={saving}>
                 {saving
-                  ? "সংরক্ষণ হচ্ছে..."
+                  ? "Saving..."
                   : editingProduct
-                    ? "পরিবর্তন সংরক্ষণ করুন"
-                    : "পণ্য সংরক্ষণ করুন"}
+                    ? "Save changes"
+                    : "Save product"}
               </button>
             </footer>
           </form>
@@ -879,15 +877,15 @@ function Dashboard({
 }) {
   return (
     <>
-      <PageHeading eyebrow="আজকের কার্যক্রম" title="ড্যাশবোর্ড" />
+      <PageHeading eyebrow="Today at a glance" title="Dashboard" />
       <div className="admin-stats">
         <article>
           <span>
             <CircleDollarSign />
           </span>
           <p>
-            মোট অর্ডার মূল্য<strong>{money(revenue)}</strong>
-            <small>বর্তমান তালিকা</small>
+            Total order value<strong>{money(revenue)}</strong>
+            <small>Current list</small>
           </p>
         </article>
         <article>
@@ -895,8 +893,8 @@ function Dashboard({
             <ClipboardList />
           </span>
           <p>
-            নতুন অর্ডার<strong>{bn(pending)}</strong>
-            <small>প্রক্রিয়ার অপেক্ষায়</small>
+            New orders<strong>{bn(pending)}</strong>
+            <small>Awaiting processing</small>
           </p>
         </article>
         <article>
@@ -904,11 +902,11 @@ function Dashboard({
             <Package />
           </span>
           <p>
-            প্রকাশিত পণ্য
+            Published products
             <strong>
               {bn(products.filter((p) => p.status === "published").length)}
             </strong>
-            <small>{bn(products.length)}টি মোট পণ্য</small>
+            <small>{bn(products.length)} products total</small>
           </p>
         </article>
         <article className={lowStock ? "warning" : ""}>
@@ -916,8 +914,8 @@ function Dashboard({
             <AlertTriangle />
           </span>
           <p>
-            লো স্টক<strong>{bn(lowStock)}</strong>
-            <small>দ্রুত ব্যবস্থা নিন</small>
+            Low stock<strong>{bn(lowStock)}</strong>
+            <small>Act soon</small>
           </p>
         </article>
       </div>
@@ -925,11 +923,11 @@ function Dashboard({
         <div className="admin-panel">
           <header>
             <div>
-              <p>অপারেশন</p>
-              <h2>সাম্প্রতিক অর্ডার</h2>
+              <p>Operations</p>
+              <h2>Recent orders</h2>
             </div>
             <button onClick={() => changeModule("orders")}>
-              সব দেখুন
+              View all
               <ArrowRight />
             </button>
           </header>
@@ -938,8 +936,8 @@ function Dashboard({
         <div className="admin-panel attention">
           <header>
             <div>
-              <p>মনোযোগ প্রয়োজন</p>
-              <h2>স্টোর সতর্কতা</h2>
+              <p>Needs attention</p>
+              <h2>Store alerts</h2>
             </div>
           </header>
           {products
@@ -951,15 +949,15 @@ function Dashboard({
                 </span>
                 <p>
                   <strong>{p.name_bn}</strong>
-                  <small>মাত্র {bn(p.stock)}টি স্টকে আছে</small>
+                  <small>Only {bn(p.stock)} left in stock</small>
                 </p>
-                <button onClick={() => changeModule("inventory")}>আপডেট</button>
+                <button onClick={() => changeModule("inventory")}>Update</button>
               </article>
             ))}
           {!products.some((p) => p.stock <= 5) && (
             <div className="healthy">
               <ShieldCheck />
-              সব ইনভেন্টরি সুস্থ আছে
+              All inventory is healthy
             </div>
           )}
           <article>
@@ -967,10 +965,10 @@ function Dashboard({
               <Activity />
             </span>
             <p>
-              <strong>{bn(pending)}টি অর্ডার অপেক্ষায়</strong>
-              <small>নিশ্চিত করা প্রয়োজন</small>
+              <strong>{bn(pending)} orders waiting</strong>
+              <small>Needs confirmation</small>
             </p>
-            <button onClick={() => changeModule("orders")}>দেখুন</button>
+            <button onClick={() => changeModule("orders")}>View</button>
           </article>
         </div>
       </div>
@@ -980,26 +978,26 @@ function Dashboard({
 function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: Order) => void }) {
   const when = (value: string) => {
     const date = new Date(value);
-    return `${date.toLocaleDateString("bn-BD")} · ${date.toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${date.toLocaleDateString("en-GB")} · ${date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
   };
   return (
     <div className="admin-table-wrap">
       <table className="order-table">
         <thead>
           <tr>
-            <th>অর্ডার</th>
-            <th>ক্রেতা</th>
-            <th>স্ট্যাটাস</th>
-            <th>পেমেন্ট</th>
-            <th>ডেলিভারি</th>
-            <th>মোট</th>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Delivery</th>
+            <th>Total</th>
             <th />
           </tr>
         </thead>
         <tbody>
           {!orders.length && (
             <tr>
-              <td colSpan={7}>কোনো অর্ডার পাওয়া যায়নি</td>
+              <td colSpan={7}>No orders found</td>
             </tr>
           )}
           {orders.map((o) => (
@@ -1028,13 +1026,13 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
                 <small>
                   {o.courier
                     ? `${o.courier}${o.tracking_number ? ` · ${o.tracking_number}` : ""}`
-                    : "কুরিয়ার বাকি"}
+                    : "No courier yet"}
                 </small>
               </td>
               <td>
                 <strong>{money(o.grand_total)}</strong>
                 <small>
-                  {bn(o.items)}টি পণ্য
+                  {bn(o.items)} item{o.items === 1 ? "" : "s"}
                   {o.coupon_code ? ` · ${o.coupon_code}` : ""}
                 </small>
               </td>
@@ -1044,7 +1042,7 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
                     className="table-text-button"
                     onClick={() => onSelect(o)}
                   >
-                    বিস্তারিত
+                    Details
                   </button>
                 )}
               </td>
@@ -1084,21 +1082,21 @@ function Orders({
   });
   return (
     <>
-      <PageHeading eyebrow="অর্ডার অপারেশন" title="সব অর্ডার" />
+      <PageHeading eyebrow="Order operations" title="All orders" />
       <div className="admin-toolbar">
         <label>
           <Search />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="অর্ডার, নাম বা ফোন দিয়ে খুঁজুন"
+            placeholder="Search by order, name or phone"
           />
         </label>
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value)}
         >
-          <option value="all">সব স্ট্যাটাস</option>
+          <option value="all">All statuses</option>
           {[
             "pending",
             "confirmed",
@@ -1114,9 +1112,9 @@ function Orders({
           ))}
         </select>
         <select value={range} onChange={(event) => setRange(event.target.value)}>
-          <option value="all">সব সময়</option>
-          <option value="today">আজ</option>
-          <option value="week">গত ৭ দিন</option>
+          <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="week">Last 7 days</option>
         </select>
       </div>
       <div className="admin-panel">
@@ -1165,9 +1163,9 @@ function Products({
   return (
     <>
       <PageHeading
-        eyebrow="ক্যাটালগ"
-        title="পণ্য ব্যবস্থাপনা"
-        action="নতুন পণ্য"
+        eyebrow="Catalogue"
+        title="Product management"
+        action="New product"
         onAction={add}
       />
       <div className="admin-toolbar">
@@ -1176,23 +1174,23 @@ function Products({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="নাম বা SKU দিয়ে খুঁজুন"
+            placeholder="Search by name or SKU"
           />
         </label>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">সব স্ট্যাটাস</option>
-          <option value="published">প্রকাশিত</option>
-          <option value="draft">ড্রাফট</option>
-          <option value="archived">আর্কাইভ</option>
+          <option value="all">All statuses</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
         </select>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
-          <option value="all">সব ক্যাটাগরি</option>
+          <option value="all">All categories</option>
           {categoryNames.map((name) => (
             <option key={name} value={name}>
               {name}
@@ -1205,11 +1203,11 @@ function Products({
           <table className="product-admin-table">
             <thead>
               <tr>
-                <th>পণ্য</th>
+                <th>Product</th>
                 <th>SKU</th>
-                <th>মূল্য</th>
-                <th>স্টক</th>
-                <th>স্ট্যাটাস</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
                 <th />
               </tr>
             </thead>
@@ -1246,13 +1244,13 @@ function Products({
                   <td>
                     <div className="row-actions">
                       <button
-                        aria-label="পণ্য সম্পাদনা"
+                        aria-label="Edit product"
                         onClick={() => edit(p)}
                       >
                         <Pencil />
                       </button>
                       <button
-                        aria-label="পণ্য মুছুন"
+                        aria-label="Product Delete"
                         onClick={() => remove(p.id)}
                       >
                         <Trash2 />
@@ -1303,7 +1301,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
       });
       const result = await response.json();
       if (!response.ok) {
-        setMessage(result.error || "স্টক আপডেট হয়নি");
+        setMessage(result.error || "stock was not updated");
         setSaving(false);
         return;
       }
@@ -1315,28 +1313,28 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
     );
     setSaving(false);
     setSelected(null);
-    setMessage("স্টক সফলভাবে আপডেট হয়েছে");
+    setMessage("Stock updated successfully");
     window.setTimeout(() => setMessage(""), 2500);
   };
   return (
     <>
-      <PageHeading eyebrow="স্টক নিয়ন্ত্রণ" title="ইনভেন্টরি" />
+      <PageHeading eyebrow="Stock control" title="Inventory" />
       <div className="admin-toolbar">
         <label>
           <Search />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="পণ্য, ভ্যারিয়েন্ট বা SKU দিয়ে খুঁজুন"
+            placeholder="Search by product, variant or SKU"
           />
         </label>
         <select
           value={availability}
           onChange={(event) => setAvailability(event.target.value)}
         >
-          <option value="all">সব স্টক</option>
-          <option value="low">লো স্টক</option>
-          <option value="healthy">পর্যাপ্ত স্টক</option>
+          <option value="all">All stock</option>
+          <option value="low">Low stock</option>
+          <option value="healthy">Healthy stock</option>
         </select>
       </div>
       <div className="admin-panel">
@@ -1344,13 +1342,13 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
           <table>
             <thead>
               <tr>
-                <th>পণ্য</th>
-                <th>ভ্যারিয়েন্ট</th>
+                <th>Product</th>
+                <th>Variant</th>
                 <th>SKU</th>
-                <th>মোট স্টক</th>
-                <th>সংরক্ষিত</th>
-                <th>বিক্রয়যোগ্য</th>
-                <th>অবস্থা</th>
+                <th>Total stock</th>
+                <th>Reserved</th>
+                <th>Sellable</th>
+                <th>Status</th>
                 <th />
               </tr>
             </thead>
@@ -1364,7 +1362,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                   <td>
                     {row.variant_title && row.variant_title !== "Default"
                       ? row.variant_title
-                      : "একক ভ্যারিয়েন্ট"}
+                      : "Single variant"}
                   </td>
                   <td>{row.sku}</td>
                   <td>
@@ -1379,8 +1377,8 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                       className={`admin-status ${row.stock <= row.low_stock_threshold ? "cancelled" : "published"}`}
                     >
                       {row.stock <= row.low_stock_threshold
-                        ? "লো স্টক"
-                        : "স্টকে আছে"}
+                        ? "Low stock"
+                        : "In stock"}
                     </span>
                   </td>
                   <td>
@@ -1391,7 +1389,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                         setMessage("");
                       }}
                     >
-                      সমন্বয়
+                      Adjust
                     </button>
                   </td>
                 </tr>
@@ -1400,7 +1398,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
           </table>
           {!visible.length && (
             <div className="inventory-empty">
-              কোনো matching inventory পাওয়া যায়নি।
+              No matching inventory found.
             </div>
           )}
         </div>
@@ -1414,11 +1412,10 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
           >
             <header>
               <div>
-                <p>স্টক সমন্বয়</p>
+                <p>Stock adjustment</p>
                 <h2>{selected.product_name}</h2>
                 <small>
-                  {selected.variant_title} · {selected.sku} · বর্তমানে{" "}
-                  {selected.stock}টি
+                  {selected.variant_title} · {selected.sku} · currently {selected.stock}
                 </small>
               </div>
               <button type="button" onClick={() => setSelected(null)}>
@@ -1426,7 +1423,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
               </button>
             </header>
             <label>
-              নতুন মোট স্টক
+              New total stock
               <input
                 name="stock"
                 type="number"
@@ -1435,23 +1432,23 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                 required
                 autoFocus
               />
-              <small>Reserved stock-এর কম দেওয়া যাবে না।</small>
+              <small>Cannot go below reserved stock.</small>
             </label>
             <label>
-              সমন্বয়ের কারণ
+              Reason for adjustment
               <textarea
                 name="reason"
                 rows={3}
                 required
-                placeholder="যেমন: নতুন stock received / damaged item correction"
+                placeholder="e.g. new stock received / damaged item correction"
               />
             </label>
             <footer>
               <button type="button" onClick={() => setSelected(null)}>
-                বাতিল
+                Cancel
               </button>
               <button disabled={saving}>
-                {saving ? "আপডেট হচ্ছে..." : "স্টক আপডেট করুন"}
+                {saving ? "Updating..." : "Update stock"}
               </button>
             </footer>
           </form>
@@ -1499,7 +1496,7 @@ function Content({
       ];
   return (
     <>
-      <PageHeading eyebrow="ডায়নামিক স্টোরফ্রন্ট" title="হোমপেজ কনটেন্ট" />
+      <PageHeading eyebrow="Dynamic storefront" title="Homepage content" />
       <div className="content-admin-grid">
         {data.map((section, i) => (
           <ContentCard
@@ -1531,7 +1528,7 @@ function ContentCard({
   const [saving, setSaving] = useState(false);
   const save = async () => {
     if (!configured) {
-      notify("প্রিভিউ মোডে পরিবর্তন সংরক্ষণ হয় না");
+      notify("Changes are not saved in preview mode");
       return;
     }
     setSaving(true);
@@ -1550,8 +1547,8 @@ function ContentCard({
     setSaving(false);
     notify(
       response.ok
-        ? "কনটেন্ট সংরক্ষিত হয়েছে"
-        : result.error || "কনটেন্ট সংরক্ষণ হয়নি",
+        ? "Content saved"
+        : result.error || "Content was not saved",
     );
   };
   return (
@@ -1560,31 +1557,31 @@ function ContentCard({
         <span>{index + 1}</span>
         <div>
           <small>{String(section.section_key)}</small>
-          <h3>{title || "শিরোনামহীন"}</h3>
+          <h3>{title || "Untitled"}</h3>
         </div>
         <button
           type="button"
           className="content-toggle"
-          aria-label="সেকশন সক্রিয়/নিষ্ক্রিয়"
+          aria-label="Toggle section"
           onClick={() => setActive((current) => !current)}
         >
           <i className={active ? "on" : ""} />
         </button>
       </header>
       <label>
-        শিরোনাম
+        Title
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </label>
       <label>
-        সহায়ক লেখা
+        Subtitle
         <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
       </label>
       <footer>
         <button type="button" onClick={() => window.open("/", "_blank")}>
-          প্রিভিউ
+          Preview
         </button>
         <button type="button" disabled={saving} onClick={save}>
-          {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+          {saving ? "Saving..." : "Save"}
         </button>
       </footer>
     </article>
@@ -1599,38 +1596,38 @@ function Reports({
 }) {
   return (
     <>
-      <PageHeading eyebrow="ব্যবসার অন্তর্দৃষ্টি" title="রিপোর্ট" />
+      <PageHeading eyebrow="Business insight" title="Reports" />
       <div className="report-grid">
         <article>
           <BarChart3 />
           <p>
-            <span>অর্ডার মূল্য</span>
+            <span>Order value</span>
             <strong>
               {money(orders.filter((o) => !VOID_STATUSES.includes(o.status)).reduce((s, o) => s + o.grand_total, 0))}
             </strong>
-            <small>{orders.length}টি অর্ডার</small>
+            <small>{orders.length} orders</small>
           </p>
         </article>
         <article>
           <Package />
           <p>
-            <span>ইনভেন্টরি ইউনিট</span>
+            <span>Inventory units</span>
             <strong>
               {products
                 .reduce((s, p) => s + p.stock, 0)
-                .toLocaleString("bn-BD")}
+                .toLocaleString("en-US")}
             </strong>
-            <small>{products.length}টি পণ্য</small>
+            <small>{bn(products.length)} products</small>
           </p>
         </article>
         <article>
           <Truck />
           <p>
-            <span>সম্পন্ন অর্ডার</span>
+            <span>Delivered orders</span>
             <strong>
               {orders.filter((o) => o.status === "delivered").length}
             </strong>
-            <small>বর্তমান ডেটা</small>
+            <small>Current data</small>
           </p>
         </article>
       </div>
@@ -1695,8 +1692,8 @@ function SettingsModule({ configured }: { configured: boolean }) {
     if (response.ok) {
       change("logo_url", data.url);
       setLogoPreview(data.url);
-      setMessage("লোগো আপলোড হয়েছে। স্থায়ী করতে তথ্য সংরক্ষণ করুন।");
-    } else setMessage(data.error || "লোগো আপলোড হয়নি");
+      setMessage("Logo uploaded. Save details to make it permanent.");
+    } else setMessage(data.error || "Logo upload failed");
   };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1709,7 +1706,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
       });
       const data = await response.json();
       if (!response.ok) {
-        setMessage(data.error || "সেটিংস সংরক্ষণ হয়নি");
+        setMessage(data.error || "Settings were not saved");
         setSaving(false);
         return;
       }
@@ -1717,25 +1714,25 @@ function SettingsModule({ configured }: { configured: boolean }) {
     setSaving(false);
     setMessage(
       configured
-        ? "কোম্পানি সেটিংস সংরক্ষিত হয়েছে"
-        : "প্রিভিউ সেটিংস আপডেট হয়েছে",
+        ? "Company settings saved"
+        : "Preview settings updated",
     );
     window.setTimeout(() => setMessage(""), 2500);
   };
   return (
     <>
-      <PageHeading eyebrow="কনফিগারেশন" title="কোম্পানি সেটিংস" />
+      <PageHeading eyebrow="Configuration" title="Company settings" />
       {loading ? (
         <div className="admin-empty">
           <span>
             <Settings />
           </span>
-          <h2>সেটিংস লোড হচ্ছে...</h2>
+          <h2>Loading settings...</h2>
         </div>
       ) : (
         <form className="company-settings" onSubmit={submit}>
           <div className="company-setting-row required">
-            <label>কোম্পানির নাম</label>
+            <label>Company name</label>
             <input
               required
               value={settings.name}
@@ -1743,7 +1740,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>ট্যাগলাইন</label>
+            <label>Tagline</label>
             <input
               required
               value={settings.tagline}
@@ -1751,16 +1748,16 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>ঠিকানা</label>
+            <label>Address</label>
             <input
               required
               value={settings.address}
               onChange={(e) => change("address", e.target.value)}
-              placeholder="বাসা, রোড, এলাকা, শহর"
+              placeholder="House, road, area, city"
             />
           </div>
           <div className="company-setting-row required">
-            <label>ফোন নম্বর</label>
+            <label>Phone number</label>
             <input
               required
               value={settings.phone}
@@ -1768,7 +1765,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>ইমেইল ঠিকানা</label>
+            <label>Email address</label>
             <input
               required
               type="email"
@@ -1777,7 +1774,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>মুদ্রা</label>
+            <label>Currency</label>
             <select
               required
               value={settings.currency}
@@ -1788,7 +1785,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             </select>
           </div>
           <div className="company-setting-row">
-            <label>ওয়েবসাইট</label>
+            <label>Website</label>
             <input
               type="url"
               value={settings.website}
@@ -1797,7 +1794,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row">
-            <label>ফেসবুক পেজ</label>
+            <label>Facebook page</label>
             <input
               type="url"
               value={settings.facebook}
@@ -1806,7 +1803,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row">
-            <label>ইনস্টাগ্রাম প্রোফাইল</label>
+            <label>Instagram profile</label>
             <input
               type="url"
               value={settings.instagram}
@@ -1831,7 +1828,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row logo-row">
-            <label>লোগো আপলোড</label>
+            <label>Upload logo</label>
             <div className="logo-upload">
               <input
                 type="file"
@@ -1855,7 +1852,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             </div>
           </div>
           <div className="company-setting-row required footer-row">
-            <label>ফুটার লেখা</label>
+            <label>Footer text</label>
             <textarea
               required
               rows={5}
@@ -1878,7 +1875,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
               </p>
             </div>
             <button disabled={saving}>
-              {saving ? "সংরক্ষণ হচ্ছে..." : "তথ্য সংরক্ষণ করুন"}
+              {saving ? "Saving..." : "Save details"}
             </button>
           </footer>
         </form>
