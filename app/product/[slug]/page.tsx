@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCart } from "@/components/cart-provider";
 import { SiteHeader } from "@/components/site-header";
+import type { StoreSettings } from "@/lib/store-settings";
 import {
-  ArrowLeft,
+  ArrowRight,
   BookOpen,
   Check,
   ChevronDown,
@@ -55,6 +56,7 @@ function ProductLogo({ logoUrl = "" }: { logoUrl?: string }) {
 
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
   const [activeImage, setActiveImage] = useState(0);
   const [gallery, setGallery] = useState(fallbackGallery);
   const [productInfo, setProductInfo] = useState({ id: "black-seed-honey-500g", name: "কালোজিরা ফুলের প্রিমিয়াম মধু", nameEn: "Black Seed Flower Honey", sku: "TM-HNY-500", category: "খাঁটি খাবার · মধু", description: "কালোজিরা ফুল থেকে মৌমাছির সংগ্রহ করা গাঢ় রঙের, তীব্র স্বাদ ও অনন্য ঘ্রাণের প্রাকৃতিক মধু। ছোট ব্যাচে সংগ্রহ করায় থাকে প্রকৃতির আসল স্বাদ।", price: 645, compareAtPrice: 745, weight: 500, stock: 20 });
@@ -66,7 +68,9 @@ export default function ProductDetailPage() {
   const [postcode, setPostcode] = useState("");
   const [checkedDelivery, setCheckedDelivery] = useState(false);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const [storeLogoUrl, setStoreLogoUrl] = useState("");
+  const [store, setStore] = useState<StoreSettings>({});
+  const storeLogoUrl = store.logo_url || "";
+  const whatsapp = store.phone ? `https://wa.me/${store.phone.replace(/\D/g, "")}` : "";
   const { addItem, count, subtotal, openCart } = useCart();
 
   useEffect(() => {
@@ -83,15 +87,15 @@ export default function ProductDetailPage() {
       } catch { /* Keep the seeded design fallback during setup. */ }
     };
     loadProduct();
-    fetch("/api/storefront", { cache: "no-store" }).then(response => response.json()).then(data => { const store = data.settings?.find((setting: { key: string }) => setting.key === "store")?.value; if (store?.logo_url) setStoreLogoUrl(String(store.logo_url)); }).catch(() => undefined);
+    fetch("/api/storefront", { cache: "no-store" }).then(response => response.json()).then(data => { const store = data.settings?.find((setting: { key: string }) => setting.key === "store")?.value; if (store) setStore(store as StoreSettings); }).catch(() => undefined);
   }, [params.slug]);
 
   useEffect(() => {
     if (!zoomOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setZoomOpen(false);
-      if (event.key === "ArrowLeft") setActiveImage((current) => (current + 1) % gallery.length);
-      if (event.key === "ArrowRight") setActiveImage((current) => (current + gallery.length - 1) % gallery.length);
+      if (event.key === "ArrowLeft") setActiveImage((current) => (current + gallery.length - 1) % gallery.length);
+      if (event.key === "ArrowRight") setActiveImage((current) => (current + 1) % gallery.length);
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", closeOnEscape);
@@ -112,7 +116,7 @@ export default function ProductDetailPage() {
 
       <SiteHeader logoUrl={storeLogoUrl} cartCount={count} cartSubtotal={subtotal} onOpenCart={openCart} />
 
-      <div className="pd-container breadcrumb"><Link href="/">হোম</Link><ChevronLeft /><Link href="/#products">পণ্য</Link><ChevronLeft /><span>{productInfo.name}</span></div>
+      <div className="pd-container breadcrumb"><Link href="/">হোম</Link><ChevronLeft /><Link href="/products">পণ্য</Link><ChevronLeft /><span>{productInfo.name}</span></div>
 
       <section className="pd-container product-overview">
         <div className="gallery">
@@ -145,7 +149,7 @@ export default function ProductDetailPage() {
             <div className="quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="পরিমাণ কমান"><Minus /></button><strong>{quantity}</strong><button onClick={() => setQuantity(quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div>
             <button className={`cart-cta ${added ? "added" : ""}`} onClick={addProductToCart}>{added ? <><PackageCheck /> কার্টে যোগ হয়েছে</> : <><ShoppingBag /> কার্টে যোগ করুন <span>· ৳{(productInfo.price * quantity).toLocaleString("bn-BD")}</span></>}</button>
           </div>
-          <button className="buy-now">এখনই কিনুন <ArrowLeft /></button>
+          <button className="buy-now" onClick={() => { addProductToCart(); router.push("/checkout"); }}>এখনই কিনুন <ArrowRight /></button>
 
           <div className="delivery-check">
             <div className="delivery-icon"><Truck /></div><div><strong>ডেলিভারি কখন পাবেন?</strong><p>আপনার এলাকার পোস্ট কোড দিয়ে দেখুন</p><label><input value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="যেমন: ১২০৩" /><button onClick={() => setCheckedDelivery(true)}>চেক করুন</button></label>{checkedDelivery && <small><Check /> আনুমানিক ডেলিভারি: ২–৩ কার্যদিবস</small>}</div>
@@ -169,11 +173,11 @@ export default function ProductDetailPage() {
         {tab === "reviews" && <div className="simple-tab" id="reviews"><h2>ক্রেতাদের মতামত</h2><p>৩৮ জন যাচাইকৃত ক্রেতার গড় রেটিং ৪.৯/৫। স্বাদ, ঘ্রাণ এবং প্যাকেজিং নিয়ে ক্রেতারা সবচেয়ে বেশি সন্তুষ্ট।</p></div>}
       </section>
 
-      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/#products">সব দেখুন <ArrowLeft /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /><button><Heart /></button></div><p>{item.meta}</p><h3>{item.name}</h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
+      <section className="related-section"><div className="pd-container"><div className="related-heading"><div><span className="pd-eyebrow">আপনার পছন্দ হতে পারে</span><h2>সঙ্গে আরও যা নিতে পারেন</h2></div><Link href="/products">সব দেখুন <ArrowRight /></Link></div><div className="related-grid">{dynamicRelated.map((item) => <article key={item.name}><div className="related-image"><Image src={item.image} alt={item.name} fill sizes="(max-width: 700px) 50vw, 25vw" /><button><Heart /></button></div><p>{item.meta}</p><h3>{item.name}</h3><div><strong>{item.price}</strong><del>{item.old}</del><button onClick={() => addItem({ id: item.id, name: item.name, price: item.numericPrice, image: item.image, variant: item.meta, href: `/product/${item.id}` })} aria-label={`${item.name} কার্টে যোগ করুন`}><ShoppingBag /></button></div></article>)}</div></div></section>
 
-      <section className="help-banner" id="help"><div className="pd-container"><div><span><MessageCircle /></span><p><strong>পণ্যটি নিয়ে কোনো প্রশ্ন আছে?</strong><small>আমাদের টিম আপনাকে সঠিক পণ্যটি বেছে নিতে সাহায্য করবে।</small></p></div><a href="#">WhatsApp-এ কথা বলুন <ArrowLeft /></a></div></section>
+      <section className="help-banner" id="help"><div className="pd-container"><div><span><MessageCircle /></span><p><strong>পণ্যটি নিয়ে কোনো প্রশ্ন আছে?</strong><small>আমাদের টিম আপনাকে সঠিক পণ্যটি বেছে নিতে সাহায্য করবে।</small></p></div>{whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer noopener">WhatsApp-এ কথা বলুন <ArrowRight /></a>}</div></section>
 
-      <footer className="pd-footer"><div className="pd-container pd-footer-grid"><div><ProductLogo /><p>বিশ্বস্ত পণ্য, সহজ কেনাকাটা। সারা বাংলাদেশে যত্নের সঙ্গে ডেলিভারি।</p><span><a href="#"><Facebook /></a><a href="#"><Instagram /></a><a href="#"><MessageCircle /></a></span></div><div><h3>কেনাকাটা</h3><a href="#">সব পণ্য</a><a href="#">খাঁটি খাবার</a><a href="#">মৌসুমি ফল</a><a href="#">বই ও কম্বো</a></div><div><h3>সহায়তা</h3><a href="#">অর্ডার ট্র্যাক</a><a href="#">ডেলিভারি তথ্য</a><a href="#">রিটার্ন ও রিফান্ড</a><a href="#">যোগাযোগ</a></div><div><h3>যোগাযোগ</h3><p>বারিক ভিলা, ১১/১ ফোল্ডার স্ট্রিট,<br />ওয়ারী, ঢাকা–১২০৩</p><strong>+৮৮০ ১৮৮৬–৪৯৪২৫৭</strong><a href="mailto:admin@torunmart.com">admin@torunmart.com</a></div></div><div className="pd-container copyright">© ২০২৬ তরুণ মার্ট। সর্বস্বত্ব সংরক্ষিত।</div></footer>
+      <footer className="pd-footer"><div className="pd-container pd-footer-grid"><div><ProductLogo logoUrl={storeLogoUrl} /><p>{store.tagline || "বিশ্বস্ত পণ্য, সহজ কেনাকাটা।"} সারা বাংলাদেশে যত্নের সঙ্গে ডেলিভারি।</p><span>{store.facebook && <a href={store.facebook} target="_blank" rel="noreferrer noopener" aria-label="Facebook"><Facebook /></a>}{store.instagram && <a href={store.instagram} target="_blank" rel="noreferrer noopener" aria-label="Instagram"><Instagram /></a>}{whatsapp && <a href={whatsapp} target="_blank" rel="noreferrer noopener" aria-label="WhatsApp"><MessageCircle /></a>}</span></div><div><h3>কেনাকাটা</h3><Link href="/products">সব পণ্য</Link><Link href="/products?category=pure-foods">খাঁটি খাবার</Link><Link href="/products?category=seasonal-fruits">মৌসুমি ফল</Link><Link href="/products?category=books">বই ও কম্বো</Link></div><div><h3>সহায়তা</h3><Link href="/account">অর্ডার ট্র্যাক</Link><Link href="/products?liked=1">পছন্দের তালিকা</Link>{store.phone && <a href={`tel:${store.phone}`}>যোগাযোগ</a>}</div><div><h3>যোগাযোগ</h3>{store.address && <p>{store.address}</p>}{store.phone && <strong>{store.phone}</strong>}{store.email && <a href={`mailto:${store.email}`}>{store.email}</a>}</div></div><div className="pd-container copyright">{store.footer || "© ২০২৬ তরুণ মার্ট। সর্বস্বত্ব সংরক্ষিত।"}</div></footer>
 
       {zoomOpen && <div className="product-lightbox" role="dialog" aria-modal="true" aria-label="পণ্যের বড় ছবি" onClick={() => setZoomOpen(false)}>
         <div className="lightbox-toolbar"><span>{activeImage + 1} / {gallery.length}</span><button onClick={() => setZoomOpen(false)} aria-label="বড় ছবি বন্ধ করুন"><X /></button></div>

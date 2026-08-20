@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/components/cart-provider";
-import { ArrowLeft, Banknote, Check, ChevronLeft, CircleCheckBig, CreditCard, Leaf, LockKeyhole, MapPin, MessageCircle, PackageCheck, ShoppingBag, Smartphone, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Banknote, Check, ChevronLeft, CircleCheckBig, CreditCard, Leaf, LockKeyhole, MapPin, MessageCircle, PackageCheck, ShoppingBag, Smartphone, Truck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { currencySymbol, useStoreSettings } from "@/lib/store-settings";
 import "./checkout.css";
@@ -68,7 +68,7 @@ export default function CheckoutPage() {
       <header className="checkout-header"><div className="checkout-container"><CheckoutLogo /><div className="checkout-progress"><span className="done"><i><Check /></i>কার্ট</span><b /><span className="active"><i>২</i>ঠিকানা ও পেমেন্ট</span><b /><span><i>৩</i>নিশ্চিতকরণ</span></div><span className="secure"><LockKeyhole /> নিরাপদ চেকআউট</span></div></header>
       <div className="checkout-container checkout-breadcrumb"><Link href="/"><ChevronLeft /> কেনাকাটায় ফিরে যান</Link></div>
 
-      {items.length === 0 ? <section className="checkout-empty"><span><ShoppingBag /></span><h1>আপনার কার্ট খালি</h1><p>চেকআউট করতে প্রথমে কিছু পণ্য কার্টে যোগ করুন।</p><Link href="/">পণ্য দেখুন <ArrowLeft /></Link></section> :
+      {items.length === 0 ? <section className="checkout-empty"><span><ShoppingBag /></span><h1>আপনার কার্ট খালি</h1><p>চেকআউট করতে প্রথমে কিছু পণ্য কার্টে যোগ করুন।</p><Link href="/products">পণ্য দেখুন <ArrowRight /></Link></section> :
       <form className="checkout-grid" onSubmit={submitOrder}>
         <div className="checkout-form">
           <section className="checkout-card customer-card">

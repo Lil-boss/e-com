@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronLeft, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export type CartProduct = {
@@ -81,13 +81,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div className={`cart-overlay ${isOpen ? "open" : ""}`} onClick={() => setIsOpen(false)} />
       <aside className={`cart-drawer ${isOpen ? "open" : ""}`} aria-hidden={!isOpen} aria-label="শপিং কার্ট">
-        <header><div><ShoppingBag /><h2>আপনার কার্ট</h2><span>{items.length} টি পণ্য</span></div><button onClick={() => setIsOpen(false)} aria-label="কার্ট বন্ধ করুন"><X /></button></header>
+        <header><div><ShoppingBag /><h2>আপনার কার্ট</h2><span>{items.length.toLocaleString("bn-BD")} টি পণ্য</span></div><button onClick={() => setIsOpen(false)} aria-label="কার্ট বন্ধ করুন"><X /></button></header>
         {notice && <div className="cart-notice"><Check /> {notice}</div>}
         {items.length === 0 ? (
-          <div className="cart-empty"><span><ShoppingBag /></span><h3>আপনার কার্ট এখনো খালি</h3><p>পছন্দের পণ্যগুলো কার্টে যোগ করলে এখানে দেখতে পাবেন।</p><button onClick={() => setIsOpen(false)}>কেনাকাটা শুরু করুন <ChevronLeft /></button></div>
+          <div className="cart-empty"><span><ShoppingBag /></span><h3>আপনার কার্ট এখনো খালি</h3><p>পছন্দের পণ্যগুলো কার্টে যোগ করলে এখানে দেখতে পাবেন।</p><button onClick={() => setIsOpen(false)}>কেনাকাটা শুরু করুন <ChevronRight /></button></div>
         ) : (
           <>
-            <div className="cart-items">{items.map((item) => <article key={item.id}><Link href={item.href || "#"} onClick={() => setIsOpen(false)}><Image src={item.image} alt={item.name} fill sizes="90px" /></Link><div className="cart-item-info"><div><p>{item.variant}</p><h3>{item.name}</h3></div><div className="cart-item-bottom"><div className="cart-quantity"><button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="পরিমাণ কমান"><Minus /></button><strong>{item.quantity}</strong><button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div><strong>{money(item.price * item.quantity)}</strong></div></div><button className="cart-remove" onClick={() => removeItem(item.id)} aria-label={`${item.name} সরান`}><Trash2 /></button></article>)}</div>
+            <div className="cart-items">{items.map((item) => <article key={item.id}><Link href={item.href || "#"} onClick={() => setIsOpen(false)}><Image src={item.image} alt={item.name} fill sizes="90px" /></Link><div className="cart-item-info"><div><p>{item.variant}</p><h3>{item.name}</h3></div><div className="cart-item-bottom"><div className="cart-quantity"><button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="পরিমাণ কমান"><Minus /></button><strong>{item.quantity.toLocaleString("bn-BD")}</strong><button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="পরিমাণ বাড়ান"><Plus /></button></div><strong>{money(item.price * item.quantity)}</strong></div></div><button className="cart-remove" onClick={() => removeItem(item.id)} aria-label={`${item.name} সরান`}><Trash2 /></button></article>)}</div>
             <div className="cart-summary"><div><span>সাবটোটাল</span><strong>{money(subtotal)}</strong></div><p>ডেলিভারি চার্জ ঠিকানা দেওয়ার পর যোগ হবে।</p><Link className="checkout-button" href="/checkout" onClick={() => setIsOpen(false)}>চেকআউট করুন <span>{money(subtotal)}</span></Link><button className="continue-button" onClick={() => setIsOpen(false)}>কেনাকাটা চালিয়ে যান</button><small>নিরাপদ চেকআউট · ক্যাশ অন ডেলিভারি</small></div>
           </>
         )}

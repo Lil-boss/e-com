@@ -4,6 +4,8 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { MessageSquareText, Pencil, Plus, Search, ShieldCheck, Tags, Trash2, Truck, X } from "lucide-react";
 
 export const money = (value: number) => `৳${Number(value || 0).toLocaleString("bn-BD")}`;
+/** Bengali numerals for display, never for input values. */
+export const bn = (value: number) => Number(value || 0).toLocaleString("bn-BD");
 export { paymentLabel, statusLabel } from "@/lib/order-status";
 import { paymentLabel, statusLabel } from "@/lib/order-status";
 
@@ -174,10 +176,10 @@ export function PromotionsModule({ configured, notify }: { configured: boolean; 
               {rows.map((coupon) => (
                 <tr key={coupon.id}>
                   <td><strong>{coupon.code}</strong><small>{coupon.discount_type === "percentage" ? "শতকরা" : "নির্দিষ্ট"}</small></td>
-                  <td><strong>{coupon.discount_type === "percentage" ? `${coupon.discount_value}%` : money(coupon.discount_value)}</strong></td>
+                  <td><strong>{coupon.discount_type === "percentage" ? `${bn(coupon.discount_value)}%` : money(coupon.discount_value)}</strong></td>
                   <td>{coupon.minimum_spend ? `ন্যূনতম ${money(coupon.minimum_spend)}` : "শর্তহীন"}</td>
                   <td>{coupon.ends_at ? new Date(coupon.ends_at).toLocaleDateString("bn-BD") : "চলমান"}</td>
-                  <td><strong>{coupon.used_count ?? 0}{coupon.usage_limit ? ` / ${coupon.usage_limit}` : ""}</strong></td>
+                  <td><strong>{coupon.used_count ?? 0}{coupon.usage_limit ? ` / ${bn(coupon.usage_limit)}` : ""}</strong></td>
                   <td><span className={`admin-status ${coupon.is_active ? "published" : "archived"}`}>{coupon.is_active ? "সক্রিয়" : "বন্ধ"}</span></td>
                   <td>
                     <div className="row-actions">
@@ -290,7 +292,7 @@ export function CustomersModule({ configured }: { configured: boolean }) {
                 <tr key={customer.key}>
                   <td><strong>{customer.name}</strong><small>{customer.phone}{customer.email ? ` · ${customer.email}` : ""}</small></td>
                   <td><span className={`admin-status ${customer.registered ? "published" : "pending"}`}>{customer.registered ? "নিবন্ধিত" : "অতিথি"}</span></td>
-                  <td><strong>{customer.orders}</strong></td>
+                  <td><strong>{bn(customer.orders)}</strong></td>
                   <td><strong>{money(customer.spent)}</strong></td>
                   <td>{customer.last_order ? new Date(customer.last_order).toLocaleDateString("bn-BD") : "—"}</td>
                 </tr>

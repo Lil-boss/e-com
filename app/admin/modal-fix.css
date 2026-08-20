@@ -65,30 +65,39 @@
 .inventory-modal footer button:last-child { border-color: var(--ad-green); color: #fff; background: var(--ad-green); }
 .inventory-empty { padding: 50px 20px; text-align: center; color: #7a847c; }
 
-.company-settings { max-width: 1040px; margin: 0 auto; padding: 34px; border: 1px solid var(--ad-line); border-radius: 12px; background: #fff; }
-.company-setting-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 14px; align-items: center; margin-bottom: 12px; }
-.company-setting-row > label { text-align: right; font-size: 13px; font-weight: 600; }
-.company-setting-row.required > label::before { content: "* "; color: #d54a3d; }
+.company-settings { max-width: 1040px; margin: 0 auto; padding: 28px; border: 1px solid var(--ad-line); border-radius: 12px; background: #fff; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.company-setting-row { display: flex; min-width: 0; flex-direction: column; gap: 6px; margin: 0; }
+.company-setting-row > label { text-align: left; font-size: 11px; font-weight: 600; }
+.company-setting-row.required > label::after { content: " *"; color: #d54a3d; }
 .company-setting-row > input,
 .company-setting-row > select,
-.company-setting-row > textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; border: 1px solid #d8ded8; border-radius: 7px; outline: none; background: #fff; }
+.company-setting-row > textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; border: 1px solid #d8ded8; border-radius: 7px; outline: none; background: #fff; font: inherit; }
+.company-setting-row > input,
+.company-setting-row > select { height: 42px; }
 .company-setting-row > input:focus,
 .company-setting-row > select:focus,
 .company-setting-row > textarea:focus { border-color: var(--ad-leaf); box-shadow: 0 0 0 3px rgba(47,122,82,.1); }
-.logo-row { align-items: start; }
+.logo-row, .footer-row { grid-column: 1 / -1; }
 .logo-upload { position: relative; width: 150px; height: 120px; overflow: hidden; border: 1px dashed #aeb9b0; border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ad-green); background: #f1f5f1; }
 .logo-upload input { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .logo-upload img { width: 100%; height: 100%; box-sizing: border-box; display: block; object-fit: contain; padding: 10px; }
 .logo-upload svg { width: 25px; }
 .logo-upload span { margin-top: 5px; font-size: 12px; font-weight: 700; }
 .logo-upload small { max-width: 125px; margin-top: 3px; color: #7b857d; text-align: center; font-size: 9px; }
-.footer-row { align-items: start; }
-.company-settings > footer { margin: 24px 0 0 194px; padding-top: 18px; border-top: 1px solid var(--ad-line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.company-settings > footer { grid-column: 1 / -1; margin: 6px 0 0; padding-top: 18px; border-top: 1px solid var(--ad-line); display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .company-settings > footer > button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 7px; color: #fff; background: var(--ad-green); font-weight: 700; }
+
+/* one select treatment for the whole panel, native chevrons clashed with the custom inputs */
+.admin-page select { appearance: none; -webkit-appearance: none; padding-right: 32px !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23536057' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 15px; font: inherit; color: inherit; cursor: pointer; }
+.admin-toolbar select { height: 41px; }
+/* the topbar search became a form, it needs the label styling it used to borrow */
+.admin-topbar > form { width: min(470px, 50%); height: 42px; border: 1px solid var(--ad-line); border-radius: 8px; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #f8faf7; }
+.admin-topbar > form svg { width: 17px; color: #778078; }
+.admin-topbar > form input { border: 0; outline: 0; background: transparent; flex: 1; min-width: 0; font: inherit; }
 .admin-brand.has-company-logo { width: 100%; max-width: 244px; box-sizing: border-box; overflow: hidden; align-items: center; }
 .admin-brand.has-company-logo > img { display: block; flex: 0 1 184px; min-width: 0; width: 100% !important; max-width: 184px !important; height: 48px !important; object-fit: contain; object-position: left center; }
 .admin-brand.has-company-logo > button { margin-left: auto; }
-@media (max-width: 700px) { .company-settings { padding: 20px 15px; } .company-setting-row { grid-template-columns: 1fr; gap: 5px; } .company-setting-row > label { text-align: left; } .company-settings > footer { margin-left: 0; align-items: stretch; flex-direction: column; } .company-settings > footer > button { width: 100%; } }
+@media (max-width: 700px) { .company-settings { padding: 20px 15px; grid-template-columns: 1fr; } .company-settings > footer { align-items: stretch; flex-direction: column; } .company-settings > footer > button { width: 100%; } }
 
 /* modules added in the gap-fix pass */
 .admin-inline-error {

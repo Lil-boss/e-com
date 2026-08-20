@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
+  ArrowRight,
   BarChart3,
   Bell,
   Boxes,
@@ -44,6 +44,7 @@ import {
   PageHeading,
   PromotionsModule,
   ReviewsModule,
+  bn,
   money,
   statusLabel,
 } from "./admin-modules";
@@ -363,7 +364,7 @@ export function AdminDashboard({
             >
               <item.icon />
               <span>{item.label}</span>
-              {item.id === "orders" && pending > 0 && <i>{pending}</i>}
+              {item.id === "orders" && pending > 0 && <i>{bn(pending)}</i>}
             </button>
           ))}
         </nav>
@@ -384,17 +385,31 @@ export function AdminDashboard({
           >
             <Menu />
           </button>
-          <label>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              setModule("products");
+            }}
+          >
             <Search />
-            <input placeholder="অর্ডার, পণ্য বা ক্রেতা খুঁজুন..." />
-          </label>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="পণ্য বা SKU খুঁজুন..."
+              aria-label="পণ্য খুঁজুন"
+            />
+          </form>
           <div>
             <Link href="/" target="_blank">
               <Eye /> স্টোর দেখুন
             </Link>
-            <button>
+            <button
+              type="button"
+              onClick={() => setModule("orders")}
+              aria-label={`${pending} টি অর্ডার অপেক্ষায়`}
+            >
               <Bell />
-              <i>3</i>
+              {pending > 0 && <i>{bn(pending)}</i>}
             </button>
             <span>SA</span>
           </div>
@@ -410,7 +425,7 @@ export function AdminDashboard({
               </span>
             </p>
             <Link href="/admin/login">
-              Setup login <ArrowLeft />
+              Setup login <ArrowRight />
             </Link>
           </div>
         )}
@@ -870,7 +885,7 @@ function Dashboard({
             <ClipboardList />
           </span>
           <p>
-            নতুন অর্ডার<strong>{pending}</strong>
+            নতুন অর্ডার<strong>{bn(pending)}</strong>
             <small>প্রক্রিয়ার অপেক্ষায়</small>
           </p>
         </article>
@@ -881,9 +896,9 @@ function Dashboard({
           <p>
             প্রকাশিত পণ্য
             <strong>
-              {products.filter((p) => p.status === "published").length}
+              {bn(products.filter((p) => p.status === "published").length)}
             </strong>
-            <small>{products.length}টি মোট পণ্য</small>
+            <small>{bn(products.length)}টি মোট পণ্য</small>
           </p>
         </article>
         <article className={lowStock ? "warning" : ""}>
@@ -891,7 +906,7 @@ function Dashboard({
             <AlertTriangle />
           </span>
           <p>
-            লো স্টক<strong>{lowStock}</strong>
+            লো স্টক<strong>{bn(lowStock)}</strong>
             <small>দ্রুত ব্যবস্থা নিন</small>
           </p>
         </article>
@@ -905,7 +920,7 @@ function Dashboard({
             </div>
             <button onClick={() => changeModule("orders")}>
               সব দেখুন
-              <ArrowLeft />
+              <ArrowRight />
             </button>
           </header>
           <OrderTable orders={orders.slice(0, 5)} />
@@ -926,7 +941,7 @@ function Dashboard({
                 </span>
                 <p>
                   <strong>{p.name_bn}</strong>
-                  <small>মাত্র {p.stock}টি স্টকে আছে</small>
+                  <small>মাত্র {bn(p.stock)}টি স্টকে আছে</small>
                 </p>
                 <button onClick={() => changeModule("inventory")}>আপডেট</button>
               </article>
@@ -942,7 +957,7 @@ function Dashboard({
               <Activity />
             </span>
             <p>
-              <strong>{pending}টি অর্ডার অপেক্ষায়</strong>
+              <strong>{bn(pending)}টি অর্ডার অপেক্ষায়</strong>
               <small>নিশ্চিত করা প্রয়োজন</small>
             </p>
             <button onClick={() => changeModule("orders")}>দেখুন</button>
@@ -992,7 +1007,7 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
               <td>{o.district}</td>
               <td>
                 <strong>{money(o.grand_total)}</strong>
-                <small>{o.items}টি পণ্য</small>
+                <small>{bn(o.items)}টি পণ্য</small>
               </td>
               <td>
                 {onSelect && (
@@ -1191,7 +1206,7 @@ function Products({
                   </td>
                   <td>
                     <span className={p.stock <= 5 ? "stock-low" : ""}>
-                      {p.stock}
+                      {bn(p.stock)}
                     </span>
                   </td>
                   <td>
@@ -1324,11 +1339,11 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                   </td>
                   <td>{row.sku}</td>
                   <td>
-                    <strong>{row.stock}</strong>
+                    <strong>{bn(row.stock)}</strong>
                   </td>
-                  <td>{row.reserved}</td>
+                  <td>{bn(row.reserved)}</td>
                   <td>
-                    <strong>{Math.max(0, row.stock - row.reserved)}</strong>
+                    <strong>{bn(Math.max(0, row.stock - row.reserved))}</strong>
                   </td>
                   <td>
                     <span
@@ -1651,8 +1666,8 @@ function SettingsModule({ configured }: { configured: boolean }) {
     if (response.ok) {
       change("logo_url", data.url);
       setLogoPreview(data.url);
-      setMessage("Logo upload হয়েছে। স্থায়ী করতে Update Details চাপুন।");
-    } else setMessage(data.error || "Logo upload হয়নি");
+      setMessage("লোগো আপলোড হয়েছে। স্থায়ী করতে তথ্য সংরক্ষণ করুন।");
+    } else setMessage(data.error || "লোগো আপলোড হয়নি");
   };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1665,7 +1680,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
       });
       const data = await response.json();
       if (!response.ok) {
-        setMessage(data.error || "Settings সংরক্ষণ হয়নি");
+        setMessage(data.error || "সেটিংস সংরক্ষণ হয়নি");
         setSaving(false);
         return;
       }
@@ -1673,25 +1688,25 @@ function SettingsModule({ configured }: { configured: boolean }) {
     setSaving(false);
     setMessage(
       configured
-        ? "Company settings সংরক্ষণ হয়েছে"
-        : "Preview settings আপডেট হয়েছে",
+        ? "কোম্পানি সেটিংস সংরক্ষিত হয়েছে"
+        : "প্রিভিউ সেটিংস আপডেট হয়েছে",
     );
     window.setTimeout(() => setMessage(""), 2500);
   };
   return (
     <>
-      <PageHeading eyebrow="কনফিগারেশন" title="Company Setting" />
+      <PageHeading eyebrow="কনফিগারেশন" title="কোম্পানি সেটিংস" />
       {loading ? (
         <div className="admin-empty">
           <span>
             <Settings />
           </span>
-          <h2>Settings লোড হচ্ছে...</h2>
+          <h2>সেটিংস লোড হচ্ছে...</h2>
         </div>
       ) : (
         <form className="company-settings" onSubmit={submit}>
           <div className="company-setting-row required">
-            <label>Company Name</label>
+            <label>কোম্পানির নাম</label>
             <input
               required
               value={settings.name}
@@ -1699,7 +1714,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>Tagline</label>
+            <label>ট্যাগলাইন</label>
             <input
               required
               value={settings.tagline}
@@ -1707,16 +1722,16 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>Address</label>
+            <label>ঠিকানা</label>
             <input
               required
               value={settings.address}
               onChange={(e) => change("address", e.target.value)}
-              placeholder="House, road, area, city"
+              placeholder="বাসা, রোড, এলাকা, শহর"
             />
           </div>
           <div className="company-setting-row required">
-            <label>Phone Number</label>
+            <label>ফোন নম্বর</label>
             <input
               required
               value={settings.phone}
@@ -1724,7 +1739,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>Email Address</label>
+            <label>ইমেইল ঠিকানা</label>
             <input
               required
               type="email"
@@ -1733,7 +1748,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row required">
-            <label>Currency</label>
+            <label>মুদ্রা</label>
             <select
               required
               value={settings.currency}
@@ -1744,7 +1759,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             </select>
           </div>
           <div className="company-setting-row">
-            <label>Website</label>
+            <label>ওয়েবসাইট</label>
             <input
               type="url"
               value={settings.website}
@@ -1753,7 +1768,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row">
-            <label>Facebook Page</label>
+            <label>ফেসবুক পেজ</label>
             <input
               type="url"
               value={settings.facebook}
@@ -1762,7 +1777,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row">
-            <label>Instagram Profile</label>
+            <label>ইনস্টাগ্রাম প্রোফাইল</label>
             <input
               type="url"
               value={settings.instagram}
@@ -1787,7 +1802,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             />
           </div>
           <div className="company-setting-row logo-row">
-            <label>Upload Logo</label>
+            <label>লোগো আপলোড</label>
             <div className="logo-upload">
               <input
                 type="file"
@@ -1811,7 +1826,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
             </div>
           </div>
           <div className="company-setting-row required footer-row">
-            <label>Footer</label>
+            <label>ফুটার লেখা</label>
             <textarea
               required
               rows={5}
@@ -1834,7 +1849,7 @@ function SettingsModule({ configured }: { configured: boolean }) {
               </p>
             </div>
             <button disabled={saving}>
-              {saving ? "সংরক্ষণ হচ্ছে..." : "Update Details"}
+              {saving ? "সংরক্ষণ হচ্ছে..." : "তথ্য সংরক্ষণ করুন"}
             </button>
           </footer>
         </form>
