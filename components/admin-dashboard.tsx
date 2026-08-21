@@ -130,6 +130,8 @@ type Props = {
   sections: Array<Record<string, unknown>>;
   variants: InventoryRow[];
   logoUrl: string;
+  /** Exact counts for the dashboard work queue, counted server-side. */
+  queue: { orders: number; payments: number; reviews: number };
 };
 type VariantDraft = {
   id: string;
@@ -162,6 +164,7 @@ export function AdminDashboard({
   sections,
   variants,
   logoUrl,
+  queue,
 }: Props) {
   const [module, setModule] = useState("dashboard");
   const [sidebar, setSidebar] = useState(false);
@@ -358,9 +361,11 @@ export function AdminDashboard({
     setProductModal(true);
   };
   // cancelled and refunded orders were inflating the revenue tile
-  const revenue = orders.filter((o) => !VOID_STATUSES.includes(o.status)).reduce((sum, o) => sum + o.grand_total, 0);
   const pending = orders.filter((o) => o.status === "pending").length;
-  const lowStock = products.filter((p) => p.stock <= 5).length;
+  // every variant, against its own threshold, not each product's first variant
+  const lowStockRows = variants
+    .filter((row) => row.stock - row.reserved <= (row.low_stock_threshold ?? 5))
+    .sort((a, b) => a.stock - a.reserved - (b.stock - b.reserved));
   return (
     <main className="admin-page">
       <aside className={`admin-sidebar ${sidebar ? "open" : ""}`}>
@@ -461,11 +466,9 @@ export function AdminDashboard({
         <div className="admin-content">
           {module === "dashboard" && (
             <Dashboard
-              revenue={revenue}
-              pending={pending}
-              lowStock={lowStock}
+              queue={queue}
+              lowStockRows={lowStockRows}
               orders={orders}
-              products={products}
               changeModule={setModule}
             />
           )}{" "}
@@ -891,64 +894,94 @@ export function AdminDashboard({
 }
 
 function Dashboard({
-  revenue,
-  pending,
-  lowStock,
+  queue,
+  lowStockRows,
   orders,
-  products,
   changeModule,
 }: {
-  revenue: number;
-  pending: number;
-  lowStock: number;
+  queue: { orders: number; payments: number; reviews: number };
+  lowStockRows: InventoryRow[];
   orders: Order[];
-  products: Product[];
   changeModule: (m: string) => void;
 }) {
+  const [trend, setTrend] = useState<{ daily: Array<{ day: string; revenue: number; orders: number }> } | null>(null);
+
+  useEffect(() => {
+    const day = (offset: number) => {
+      const date = new Date(Date.now() + offset * 86_400_000);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    };
+    fetch(`/api/admin/reports?from=${day(-13)}&to=${day(0)}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => data && setTrend(data))
+      .catch(() => undefined);
+  }, []);
+
+  const daily = trend?.daily || [];
+  const today = daily[daily.length - 1];
+  const yesterday = daily[daily.length - 2];
+  const fortnight = daily.reduce((sum, row) => sum + row.revenue, 0);
+  const max = Math.max(1, ...daily.map((row) => row.revenue));
+  const spark = daily
+    .map((row, index) => `${(index / Math.max(1, daily.length - 1)) * 100},${24 - (row.revenue / max) * 20}`)
+    .join(" ");
+
+  // No percentage against yesterday: today is a day in progress, so a percentage
+  // comparing a partial day with a complete one always reads wrong. Yesterday's
+  // actual figure is the honest reference. Reports keeps deltas, where both
+  // windows are complete and chosen by the reader.
+  const plural = (count: number, one: string, many: string) => `${bn(count)} ${count === 1 ? one : many}`;
+  const workItems = [
+    { key: "orders", count: queue.orders, label: plural(queue.orders, "order awaiting confirmation", "orders awaiting confirmation"), module: "orders", icon: <ClipboardList /> },
+    { key: "payments", count: queue.payments, label: plural(queue.payments, "payment to verify", "payments to verify"), module: "orders", icon: <CircleDollarSign /> },
+    { key: "reviews", count: queue.reviews, label: plural(queue.reviews, "review to moderate", "reviews to moderate"), module: "reviews", icon: <MessageSquareText /> },
+    { key: "stock", count: lowStockRows.length, label: plural(lowStockRows.length, "variant low on stock", "variants low on stock"), module: "inventory", icon: <AlertTriangle /> },
+  ].filter((item) => item.count > 0);
+  const workTotal = workItems.reduce((sum, item) => sum + item.count, 0);
+
   return (
     <>
       <PageHeading eyebrow="Today at a glance" title="Dashboard" />
       <div className="admin-stats">
-        <article>
-          <span>
-            <CircleDollarSign />
-          </span>
+        <article className="dash-revenue">
+          <span><CircleDollarSign /></span>
           <p>
-            Total order value<strong>{money(revenue)}</strong>
-            <small>Current list</small>
+            Revenue so far today
+            <strong>{trend ? money(today?.revenue || 0) : "—"}</strong>
+            <small>{trend ? `yesterday ${money(yesterday?.revenue || 0)}` : "loading"}</small>
+          </p>
+          {daily.length > 1 && (
+            <svg className="dash-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points={spark} vectorEffect="non-scaling-stroke" />
+            </svg>
+          )}
+        </article>
+        <article>
+          <span><ClipboardList /></span>
+          <p>
+            Orders so far today
+            <strong>{trend ? bn(today?.orders || 0) : "—"}</strong>
+            <small>{trend ? `yesterday ${bn(yesterday?.orders || 0)}` : "loading"}</small>
           </p>
         </article>
         <article>
-          <span>
-            <ClipboardList />
-          </span>
+          <span><BarChart3 /></span>
           <p>
-            New orders<strong>{bn(pending)}</strong>
-            <small>Awaiting processing</small>
+            Last 14 days
+            <strong>{trend ? money(fortnight) : "—"}</strong>
+            <small>{trend ? `${bn(daily.reduce((sum, row) => sum + row.orders, 0))} orders` : "loading"}</small>
           </p>
         </article>
-        <article>
-          <span>
-            <Package />
-          </span>
+        <article className={workTotal ? "warning" : ""}>
+          <span><Activity /></span>
           <p>
-            Published products
-            <strong>
-              {bn(products.filter((p) => p.status === "published").length)}
-            </strong>
-            <small>{bn(products.length)} products total</small>
-          </p>
-        </article>
-        <article className={lowStock ? "warning" : ""}>
-          <span>
-            <AlertTriangle />
-          </span>
-          <p>
-            Low stock<strong>{bn(lowStock)}</strong>
-            <small>Act soon</small>
+            Needs you
+            <strong>{bn(workTotal)}</strong>
+            <small>{workTotal === 1 ? "item waiting" : workTotal ? "items waiting" : "nothing waiting"}</small>
           </p>
         </article>
       </div>
+
       <div className="admin-dashboard-grid">
         <div className="admin-panel">
           <header>
@@ -961,50 +994,52 @@ function Dashboard({
               <ArrowRight />
             </button>
           </header>
-          <OrderTable orders={orders.slice(0, 5)} />
+          <OrderTable orders={orders.slice(0, 6)} />
         </div>
+
         <div className="admin-panel attention">
           <header>
             <div>
               <p>Needs attention</p>
-              <h2>Store alerts</h2>
+              <h2>Your work queue</h2>
             </div>
           </header>
-          {products
-            .filter((p) => p.stock <= 5)
-            .map((p) => (
-              <article key={p.id}>
-                <span>
-                  <AlertTriangle />
-                </span>
-                <p>
-                  <strong>{p.name_bn}</strong>
-                  <small>Only {bn(p.stock)} left in stock</small>
-                </p>
-                <button onClick={() => changeModule("inventory")}>Update</button>
-              </article>
-            ))}
-          {!products.some((p) => p.stock <= 5) && (
+          {workItems.map((item) => (
+            <article key={item.key}>
+              <span>{item.icon}</span>
+              <p>
+                <strong>{item.label}</strong>
+                <small>{item.key === "payments" ? "Non-COD orders still unpaid" : item.key === "stock" ? "At or below their threshold" : "Waiting on you"}</small>
+              </p>
+              <button onClick={() => changeModule(item.module)}>Open</button>
+            </article>
+          ))}
+          {!workItems.length && (
             <div className="healthy">
               <ShieldCheck />
-              All inventory is healthy
+              Nothing needs attention
             </div>
           )}
-          <article>
-            <span>
-              <Activity />
-            </span>
-            <p>
-              <strong>{bn(pending)} orders waiting</strong>
-              <small>Needs confirmation</small>
-            </p>
-            <button onClick={() => changeModule("orders")}>View</button>
-          </article>
+          {lowStockRows.length > 0 && (
+            <div className="dash-lowstock">
+              <strong>Lowest stock</strong>
+              <ul>
+                {lowStockRows.slice(0, 4).map((row) => (
+                  <li key={row.variant_id}>
+                    <span title={row.product_name}>{row.product_name}</span>
+                    <small>{row.variant_title}</small>
+                    <b className={row.stock - row.reserved <= 0 ? "out" : ""}>{bn(Math.max(0, row.stock - row.reserved))} sellable</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </>
   );
 }
+
 function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: Order) => void }) {
   const when = (value: string) => {
     const date = new Date(value);

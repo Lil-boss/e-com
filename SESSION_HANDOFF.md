@@ -272,6 +272,19 @@ Every homepage control resolves to a real destination. Deliberate exceptions:
   Only title/subtitle are editable in the admin content module; the JSON `content`
   (slides, campaign price/image) still needs direct database edits.
 
+## Dashboard
+
+Today's numbers come from `/api/admin/reports` (full data), not the 50-row slice.
+Tiles read "so far today" with **yesterday's actual figure** as the reference —
+deliberately no percentage, because a day in progress compared against a complete
+one always reads wrong. Reports keeps percentage deltas, where both windows are
+complete and reader-chosen.
+
+The right-hand panel is a work queue with server-counted totals: orders awaiting
+confirmation, non-COD payments still unpaid, reviews to moderate, and variants at
+or below their own low-stock threshold (every variant, not each product's first).
+Each row jumps to the module that clears it.
+
 ## Reports
 
 `components/admin-reports.tsx` + `app/api/admin/reports/route.ts` + `app/admin/reports.css`.

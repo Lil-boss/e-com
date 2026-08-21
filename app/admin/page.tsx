@@ -23,7 +23,7 @@ const demoOrders = [
 ];
 
 export default async function AdminPage() {
-  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} variants={demoProducts.map((p) => ({ variant_id: p.id, product_name: p.name_bn, variant_title: "Default", sku: p.sku, category: p.category, stock: p.stock, reserved: 0, low_stock_threshold: 5 }))} logoUrl="" />;
+  if (!isSupabaseConfigured) return <AdminDashboard configured={false} role="super_admin" products={demoProducts} orders={demoOrders} categories={[]} sections={[]} variants={demoProducts.map((p) => ({ variant_id: p.id, product_name: p.name_bn, variant_title: "Default", sku: p.sku, category: p.category, stock: p.stock, reserved: 0, low_stock_threshold: 5 }))} logoUrl="" queue={{ orders: 1, payments: 1, reviews: 0 }} />;
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
@@ -38,12 +38,16 @@ export default async function AdminPage() {
     staff = bootstrappedStaff;
   }
   if (!staff?.is_active) redirect("/admin/login?error=forbidden");
-  const [productsResult, ordersResult, categoriesResult, sectionsResult, storeResult] = await Promise.all([
+  const [productsResult, ordersResult, categoriesResult, sectionsResult, storeResult, pendingOrders, paymentsToVerify, pendingReviews] = await Promise.all([
     supabase.from("products").select("*,product_media(storage_path,sort_order),categories(name_bn),product_variants(id,sku,title,price,attributes,inventory(on_hand,reserved,low_stock_threshold))").order("created_at",{ascending:false}),
     supabase.from("orders").select("id,order_number,customer_name,customer_phone,status,payment_status,payment_method,coupon_code,grand_total,created_at,district,area,order_items(count),shipments(courier,tracking_number)").order("created_at",{ascending:false}).limit(50),
     supabase.from("categories").select("id,name_bn,slug,is_active,show_on_home,sort_order").order("sort_order"),
     supabase.from("homepage_sections").select("section_key,section_type,title,subtitle,content,is_active,sort_order").order("sort_order"),
     supabase.from("store_settings").select("value").eq("key","store").maybeSingle(),
+    // exact counts for the dashboard work queue, not derived from the 50-row slice
+    supabase.from("orders").select("id",{count:"exact",head:true}).eq("status","pending"),
+    supabase.from("orders").select("id",{count:"exact",head:true}).eq("payment_status","pending").neq("payment_method","cod"),
+    supabase.from("reviews").select("id",{count:"exact",head:true}).eq("status","pending"),
   ]);
   const products = (productsResult.data || []).map((p: Record<string,unknown>) => { const rows=(p.product_variants as Array<{id:string;sku:string;title:string;price:number;attributes?:{color?:string|null;size?:string|null};inventory?:{on_hand?:number;reserved?:number;low_stock_threshold?:number}}>)||[]; const variant=rows[0]; return ({ ...p, variants: rows.map((row)=>({ id:row.id, sku:row.sku, title:row.title, price:Number(row.price), attributes:row.attributes||{}, stock:row.inventory?.on_hand||0 })), image: ((p.product_media as Array<{storage_path:string}>)?.[0]?.storage_path || ""), images: (p.product_media as Array<{storage_path:string}>)?.map(media=>media.storage_path) || [], category: (p.categories as {name_bn?:string})?.name_bn || "—", variant_id:variant?.id,variant_title:variant?.title,stock:variant?.inventory?.on_hand||0,reserved:variant?.inventory?.reserved||0,low_stock_threshold:variant?.inventory?.low_stock_threshold||5 }) }) as unknown as Product[];
   const variants: InventoryRow[] = (productsResult.data || []).flatMap((p: Record<string,unknown>) => {
@@ -64,5 +68,6 @@ export default async function AdminPage() {
     return { ...o, items: (o.order_items as Array<{count?:number}>)?.[0]?.count || 0, courier: shipment?.courier || "", tracking_number: shipment?.tracking_number || "" };
   }) as unknown as Order[];
   const storeValue = (storeResult.data?.value || {}) as Record<string, unknown>;
-  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} variants={variants} logoUrl={String(storeValue.logo_url || "")} />;
+  const queue = { orders: pendingOrders.count || 0, payments: paymentsToVerify.count || 0, reviews: pendingReviews.count || 0 };
+  return <AdminDashboard configured role={staff.role} products={products} orders={orders} categories={categoriesResult.data || []} sections={sectionsResult.data || []} variants={variants} logoUrl={String(storeValue.logo_url || "")} queue={queue} />;
 }

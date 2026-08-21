@@ -90,3 +90,20 @@
   .rp-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .rp-root, .rp-column span { transition: none; } }
+
+/* Dashboard: today's numbers, a 14-day sparkline, and the work queue */
+.dash-revenue { position: relative; overflow: hidden; }
+.dash-spark { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 34px; opacity: .3; }
+.dash-spark polyline { fill: none; stroke: #2f7a52; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.admin-stats .rp-delta { padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.admin-stats .rp-delta-up { background: #e7f4ea; color: #287147; }
+.admin-stats .rp-delta-down { background: #fbe8e5; color: #a34236; }
+.admin-stats .rp-delta-flat { background: #eef1ed; color: #5e685f; }
+.dash-lowstock { padding: 13px 15px 15px; border-top: 1px solid var(--ad-line); }
+.dash-lowstock > strong { display: block; margin-bottom: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: #7b837c; }
+.dash-lowstock ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.dash-lowstock li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; font-size: 12px; }
+.dash-lowstock li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-lowstock li small { grid-column: 1; color: #8b928c; font-size: 10px; }
+.dash-lowstock li b { grid-column: 2; grid-row: 1 / 3; align-self: center; color: #5e685f; font-size: 11px; }
+.dash-lowstock li b.out { color: #a34236; }
