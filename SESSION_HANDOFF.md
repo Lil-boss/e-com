@@ -74,6 +74,9 @@ The production build currently passes. `next.config.ts` limits build workers to 
   for the catalogue; without `all` it still returns the 8 featured products.
 - Product details API: `app/api/products/[slug]/route.ts`
 - Printable invoice: `/invoice/[id]` + `app/api/orders/[id]/route.ts`
+  - The invoice is in **English** while the storefront is Bengali: it is the
+    document couriers, accountants and payment providers handle. Store data
+    inside it (address, footer line, product names) prints as entered.
   - Browser print / "Save as PDF"; no PDF library. `@media print` in `invoice.css`
     hides the cart drawer and the print button, and `document.title` becomes
     `Invoice-<order number>` so the saved file is named sensibly.
