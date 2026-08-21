@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminDashboard, type InventoryRow, type Order, type Product } from "@/components/admin-dashboard";
 import "./admin.css";
 import "./modal-fix.css";
+import "./reports.css";
 
 export const dynamic = "force-dynamic";
 

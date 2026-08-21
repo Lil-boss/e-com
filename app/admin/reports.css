@@ -1,0 +1,92 @@
+/*
+ * Report palette. Roles, not raw hex, so a dark set is a one-place swap.
+ * Magnitude charts use a single brand hue (the job is size, not identity).
+ * The only categorical use is a two-class split; that pair was checked with the
+ * validator (adjacent CVD ΔE 9.2, normal-vision ΔE 27.6 on a white surface) and
+ * its contrast warning is discharged by the always-visible legend labels.
+ */
+.rp-root {
+  --rp-surface: #fff;
+  --rp-ink: #17211b;
+  --rp-muted: #6d776f;
+  --rp-line: #e6eae5;
+  --rp-accent: #2f7a52;        /* sequential / single-series magnitude */
+  --rp-accent-soft: #e6f1ea;
+  --rp-series-1: #1baf7a;
+  --rp-series-2: #eb6834;
+  --rp-good: #287147;
+  --rp-bad: #a34236;
+  transition: opacity .18s ease;
+}
+.rp-loading { opacity: .55; }
+
+.rp-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 14px; }
+.rp-tile { min-height: 112px; padding: 17px; display: flex; align-items: center; gap: 13px; background: var(--rp-surface); border: 1px solid var(--ad-line); border-radius: 11px; }
+.rp-tile-icon { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; background: var(--rp-accent-soft); color: var(--rp-accent); }
+.rp-tile-icon svg { width: 21px; }
+.rp-tile p { display: flex; flex-direction: column; gap: 3px; margin: 0; min-width: 0; }
+.rp-tile-label { color: var(--rp-muted); font-size: 12px; }
+.rp-tile strong { font-size: 25px; letter-spacing: -.02em; }
+.rp-tile small { display: flex; align-items: center; gap: 7px; color: #8b928c; font-size: 11px; }
+.rp-delta { padding: 1px 6px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.rp-delta-up { background: #e7f4ea; color: var(--rp-good); }
+.rp-delta-down { background: #fbe8e5; color: var(--rp-bad); }
+.rp-delta-flat, .rp-delta-new { background: #eef1ed; color: #5e685f; }
+.rp-compare { margin: 10px 2px 18px; color: #8b928c; font-size: 11px; }
+
+.rp-panel { margin-bottom: 16px; }
+.rp-panel > header { height: auto; min-height: 62px; padding: 13px 18px; }
+.rp-body { padding: 16px 18px 20px; }
+.rp-empty { padding: 26px 0; color: var(--rp-muted); text-align: center; font-size: 13px; }
+
+/* Trend: columns for revenue, a line for orders. Two scales, so two charts, never two axes. */
+.rp-chart { position: relative; padding: 20px 18px 12px; }
+.rp-columns { height: 168px; display: flex; align-items: flex-end; gap: 2px; }
+.rp-column { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; display: flex; align-items: flex-end; cursor: pointer; }
+.rp-column span { display: block; width: 100%; border-radius: 4px 4px 0 0; background: var(--rp-accent); opacity: .82; transition: opacity .15s ease; }
+.rp-column:hover span, .rp-column.on span, .rp-column:focus-visible span { opacity: 1; }
+.rp-column:focus-visible { outline: 2px solid var(--rp-accent); outline-offset: 2px; border-radius: 4px; }
+.rp-axis { display: flex; justify-content: space-between; margin-top: 7px; color: #8b928c; font-size: 10px; }
+
+.rp-sub { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rp-line); }
+.rp-sub-label { display: block; margin-bottom: 6px; color: var(--rp-muted); font-size: 11px; }
+.rp-sub svg { width: 100%; height: 54px; display: block; overflow: visible; }
+.rp-sub polyline { fill: none; stroke: var(--rp-accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.rp-sub circle { fill: var(--rp-accent); stroke: var(--rp-surface); stroke-width: 2; }
+
+.rp-tooltip { position: absolute; top: 4px; transform: translateX(-50%); padding: 8px 11px; display: flex; flex-direction: column; gap: 1px; border-radius: 8px; background: #12301f; color: #fff; font-size: 11px; pointer-events: none; white-space: nowrap; box-shadow: 0 8px 22px rgba(10,30,18,.22); }
+.rp-tooltip strong { font-size: 12px; }
+.rp-tooltip span { color: #bfd4c6; }
+.rp-table-toggle { border: 1px solid var(--ad-line); border-radius: 7px; min-height: 32px; padding: 0 11px; background: #fff; color: var(--ad-green); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.rp-table { border-top: 1px solid var(--rp-line); }
+
+.rp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.rp-grid .rp-panel { margin-bottom: 0; }
+
+.rp-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 13px; }
+.rp-bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; }
+.rp-bar-label { grid-column: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.rp-bars b { grid-column: 2; grid-row: 1; font-size: 13px; }
+.rp-bar-track { grid-column: 1 / -1; grid-row: 2; height: 8px; border-radius: 4px; background: #eef1ed; overflow: hidden; }
+.rp-bar-fill { display: block; height: 100%; border-radius: 4px; background: var(--rp-accent); }
+/* status tokens only where the colour means a state, never as a spare series hue */
+.rp-bar-fill.rp-void { background: var(--rp-bad); }
+.rp-bar-fill.rp-done { background: var(--rp-good); }
+.rp-bars small { grid-column: 1 / -1; grid-row: 3; color: #8b928c; font-size: 11px; }
+
+.rp-split-track { display: flex; gap: 2px; height: 14px; border-radius: 7px; overflow: hidden; background: #eef1ed; }
+.rp-split-part { display: block; height: 100%; }
+.rp-series-1 { background: var(--rp-series-1); }
+.rp-series-2 { background: var(--rp-series-2); }
+.rp-legend { list-style: none; margin: 15px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.rp-legend li { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.rp-legend i { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 3px; }
+.rp-legend span { flex: 1; min-width: 0; }
+.rp-legend small { color: #8b928c; font-size: 11px; }
+
+@media (max-width: 900px) {
+  .rp-chart { padding: 16px 12px 10px; }
+  .rp-columns { height: 130px; }
+  .rp-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .rp-root, .rp-column span { transition: none; } }

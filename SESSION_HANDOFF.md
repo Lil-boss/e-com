@@ -272,6 +272,24 @@ Every homepage control resolves to a real destination. Deliberate exceptions:
   Only title/subtitle are editable in the admin content module; the JSON `content`
   (slides, campaign price/image) still needs direct database edits.
 
+## Reports
+
+`components/admin-reports.tsx` + `app/api/admin/reports/route.ts` + `app/admin/reports.css`.
+
+The API aggregates over the **whole** orders table for the range, not the 50-row
+slice the admin page fetches for its tables, and buckets by Dhaka calendar days
+server-side. It returns totals, a same-length previous window for deltas, daily
+buckets, status/payment/area tallies, top products from `order_items` and coupon
+use. Aggregation is in route code (PostgREST has no clean GROUP BY through RLS);
+the ceiling is marked in the file.
+
+Charts are hand-built: CSS bars for magnitude, one SVG polyline for the orders
+trend, no chart library. Revenue and orders are separate small multiples sharing
+one hovered-day state, never a dual axis. Magnitude bars use a single brand hue;
+the one categorical pair (payment/area splits) was checked with the dataviz
+validator and carries always-visible labels. Status bars use status colours only
+where the colour means a state (delivered, cancelled).
+
 ## Closed in the 21 August pass
 
 Storefront: variant selection end to end (cart lines are keyed product+variant,
