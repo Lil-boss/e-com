@@ -383,7 +383,7 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
                 <h3>Status</h3>
                 <p>
                   <span className={`admin-status ${order.status}`}>{statusLabel[order.status] || order.status}</span>
-                  <small>Payment: {paymentLabel[order.payment_status] || order.payment_status} · {order.payment_method.toUpperCase()}</small>
+                  <small>Payment: {paymentLabel[order.payment_status] || order.payment_status} · {String(order.payment_method || "cod").toUpperCase()}</small>
                   {order.payments?.[0]?.provider_reference && <small className="payment-ref">Ref: {order.payments[0].provider_reference}</small>}
                   <small>{new Date(order.created_at).toLocaleString("en-GB")}</small>
                 </p>
@@ -394,7 +394,7 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
               <table>
                 <thead><tr><th>Product</th><th>Unit price</th><th>Qty</th><th>Total</th></tr></thead>
                 <tbody>
-                  {order.order_items.map((item) => (
+                  {(order.order_items || []).map((item) => (
                     <tr key={item.id}>
                       <td><strong>{item.product_name}</strong><small>{item.variant_name || item.sku}</small></td>
                       <td>{money(item.unit_price)}</td>
@@ -458,7 +458,7 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
 
             <section className="order-timeline">
               <h3>Order timeline</h3>
-              {order.order_status_events.map((event, index) => (
+              {(order.order_status_events || []).map((event, index) => (
                 <p key={index}><span /><strong>{statusLabel[event.to_status] || event.to_status}</strong><small>{new Date(event.created_at).toLocaleString("en-GB")}{event.note ? ` · ${event.note}` : ""}</small></p>
               ))}
             </section>
