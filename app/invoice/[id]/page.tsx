@@ -6,7 +6,7 @@ import { Leaf, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { currencySymbol, type StoreSettings } from "@/lib/store-settings";
 import { bengali } from "@/lib/storefront";
-import { paymentLabel, statusLabel } from "@/lib/order-status";
+import { methodLabel, paymentLabel, statusLabel } from "@/lib/order-status";
 import "./invoice.css";
 
 type InvoiceItem = { product_name: string; variant_name: string | null; sku: string; unit_price: number; quantity: number; line_total: number };
@@ -121,7 +121,7 @@ export default function InvoicePage() {
           <div>
             <h2>অবস্থা</h2>
             <p>অর্ডার: <strong>{statusLabel[order.status] || order.status}</strong></p>
-            <p>পেমেন্ট: <strong>{paymentLabel[order.payment_status] || order.payment_status}</strong> · {String(order.payment_method || "cod").toUpperCase()}</p>
+            <p>পেমেন্ট: <strong>{paymentLabel[order.payment_status] || order.payment_status}</strong> · {methodLabel[order.payment_method] || order.payment_method}</p>
             {shipment?.courier && <p>কুরিয়ার: {shipment.courier}{shipment.tracking_number ? ` · ${shipment.tracking_number}` : ""}</p>}
           </div>
         </section>

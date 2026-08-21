@@ -7,8 +7,8 @@ export const money = (value: number) => `৳${Number(value || 0).toLocaleString(
 /** Grouped numerals for display, never for input values. */
 export const bn = (value: number) => Number(value || 0).toLocaleString("en-US");
 // the admin reads the English maps; the storefront imports the Bengali ones directly
-export { paymentLabelEn as paymentLabel, statusLabelEn as statusLabel } from "@/lib/order-status";
-import { paymentLabelEn as paymentLabel, statusLabelEn as statusLabel } from "@/lib/order-status";
+export { methodLabelEn as methodLabel, paymentLabelEn as paymentLabel, statusLabelEn as statusLabel } from "@/lib/order-status";
+import { methodLabelEn as methodLabel, paymentLabelEn as paymentLabel, statusLabelEn as statusLabel } from "@/lib/order-status";
 
 export function PageHeading({ eyebrow, title, action, onAction }: { eyebrow: string; title: string; action?: string; onAction?: () => void }) {
   return (
@@ -383,7 +383,7 @@ export function OrderDetailModal({ orderId, configured, onClose, onUpdated, noti
                 <h3>Status</h3>
                 <p>
                   <span className={`admin-status ${order.status}`}>{statusLabel[order.status] || order.status}</span>
-                  <small>Payment: {paymentLabel[order.payment_status] || order.payment_status} · {String(order.payment_method || "cod").toUpperCase()}</small>
+                  <small>Payment: {paymentLabel[order.payment_status] || order.payment_status} · {methodLabel[order.payment_method] || order.payment_method}</small>
                   {order.payments?.[0]?.provider_reference && <small className="payment-ref">Ref: {order.payments[0].provider_reference}</small>}
                   <small>{new Date(order.created_at).toLocaleString("en-GB")}</small>
                 </p>

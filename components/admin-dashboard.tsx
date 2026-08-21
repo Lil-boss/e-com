@@ -49,6 +49,7 @@ import {
   ReviewsModule,
   bn,
   money,
+  methodLabel,
   paymentLabel,
   statusLabel,
 } from "./admin-modules";
@@ -1084,7 +1085,7 @@ function OrderTable({ orders, onSelect }: { orders: Order[]; onSelect?: (order: 
                 <span className={`admin-status ${o.payment_status}`}>
                   {paymentLabel[o.payment_status] || o.payment_status}
                 </span>
-                {o.payment_method && <small>{o.payment_method.toUpperCase()}</small>}
+                {o.payment_method && <small>{methodLabel[o.payment_method] || o.payment_method}</small>}
               </td>
               <td>
                 <strong>{o.district}</strong>

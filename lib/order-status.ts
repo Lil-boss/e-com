@@ -8,6 +8,14 @@ export const paymentLabel: Record<string, string> = {
   pending: "বকেয়া", authorized: "অনুমোদিত", paid: "পরিশোধিত", failed: "ব্যর্থ", refunded: "রিফান্ড", partially_refunded: "আংশিক রিফান্ড",
 };
 
+/** Payment methods. The storefront prints Bengali; the raw column value is a code, not a label. */
+export const methodLabel: Record<string, string> = {
+  cod: "ক্যাশ অন ডেলিভারি", mobile: "মোবাইল ব্যাংকিং", card: "কার্ড পেমেন্ট",
+};
+export const methodLabelEn: Record<string, string> = {
+  cod: "Cash on delivery", mobile: "Mobile banking", card: "Card",
+};
+
 /** Admin panel runs in English; the storefront keeps the Bengali maps above. */
 export const statusLabelEn: Record<string, string> = {
   pending: "New", confirmed: "Confirmed", processing: "Processing", packed: "Packed", shipped: "Shipped",
