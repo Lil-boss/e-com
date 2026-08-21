@@ -158,6 +158,15 @@ Modules present:
 
 ### Inventory
 
+- `reserved` is derived from open orders and is deliberately not editable. The
+  adjust modal explains it, lists the open orders holding the stock, and offers
+  **Recalculate** when `reserved` disagrees with them — which is how stock
+  stranded by an order that no longer exists gets released. Reconciling writes a
+  movement row, so the ledger stays truthful.
+- The modal also shows recent `inventory_movements` (written since day one but
+  never surfaced before) and lets the low-stock threshold be edited per variant.
+- Filters key on **sellable** (on hand − reserved), and add "Nothing sellable"
+  and "Has reserved units".
 - Search and low/healthy stock filters.
 - Every colour/size variant is listed independently, not just the first variant.
 - Displays total, reserved, and sellable stock.

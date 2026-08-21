@@ -357,3 +357,30 @@
 .content-slide > button svg { width: 13px; }
 .content-add { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 11px; margin-top: 4px; border: 1px dashed #aeb9b0; border-radius: 7px; background: #f6f8f5; color: var(--ad-green); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .content-add svg { width: 13px; }
+
+/* Inventory detail: reserved is explained, not typed in */
+.inv-figures { display: flex; gap: 8px; margin: 16px 20px 4px; }
+.inv-figures span { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 11px 13px; border: 1px solid var(--ad-line); border-radius: 9px; background: #f8faf7; color: #7b837c; font-size: 11px; }
+.inv-figures b { color: #17211b; font-size: 19px; }
+.inv-figures .inv-sellable { border-color: #cfe3d6; background: #eef6f0; }
+.inv-figures .inv-sellable b { color: var(--ad-green); }
+.inv-reserved, .inv-movements { margin: 4px 20px; padding: 14px 15px; border: 1px solid var(--ad-line); border-radius: 9px; background: #f8faf7; }
+.inv-reserved h3, .inv-movements h3 { margin: 0 0 6px; font-size: 12px; }
+.inv-reserved > p { margin: 0 0 10px; color: #6d776f; font-size: 11px; line-height: 1.6; }
+.inv-muted { color: #8b928c; font-size: 11px; }
+.inv-reserved ul, .inv-movements ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.inv-reserved li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 9px; align-items: baseline; font-size: 12px; }
+.inv-reserved li small { grid-column: 2; color: #8b928c; font-size: 10px; }
+.inv-reserved li b { grid-column: 3; grid-row: 1; }
+.inv-mismatch { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: center; margin-top: 12px; padding: 11px 13px; border-radius: 8px; background: #fff3d9; }
+.inv-mismatch svg { width: 17px; color: #a67512; }
+.inv-mismatch p { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.inv-mismatch strong { font-size: 12px; color: #6b5410; }
+.inv-mismatch small { color: #8a6d1c; font-size: 10px; }
+.inv-mismatch button { min-height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: var(--ad-green); color: #fff; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.inv-movements li { display: grid; grid-template-columns: auto auto 1fr auto; gap: 3px 9px; align-items: baseline; font-size: 11px; }
+.inv-movements li span { text-transform: capitalize; font-weight: 600; }
+.inv-movements li b.up { color: #287147; }
+.inv-movements li b.down { color: #a34236; }
+.inv-movements li small { color: #8b928c; grid-column: 3; }
+.inv-movements li time { color: #8b928c; }

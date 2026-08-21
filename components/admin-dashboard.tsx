@@ -38,7 +38,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import {
   CategoriesModule,
@@ -1370,27 +1370,68 @@ function Products({
     </>
   );
 }
+type VariantDetail = {
+  on_hand: number; reserved: number; low_stock_threshold: number; expectedReserved: number;
+  holders: Array<{ order_id: string; order_number: string; status: string; customer_name: string; quantity: number }>;
+  movements: Array<{ movement_type: string; quantity_delta: number; reason: string; created_at: string }>;
+};
+
 function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
   const [rows, setRows] = useState(initialRows);
   const [query, setQuery] = useState("");
   const [availability, setAvailability] = useState("all");
   const [selected, setSelected] = useState<InventoryRow | null>(null);
+  const [detail, setDetail] = useState<VariantDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+
+  // What is actually holding this variant's stock, and what has moved recently.
+  const loadDetail = useCallback(async (variantId: string) => {
+    setDetail(null);
+    if (!isSupabaseConfigured) return;
+    const response = await fetch(`/api/admin/inventory?variant_id=${variantId}`);
+    if (!response.ok) return;
+    setDetail((await response.json()) as VariantDetail);
+  }, []);
+
+  useEffect(() => {
+    if (selected) loadDetail(selected.variant_id);
+  }, [selected, loadDetail]);
+
+  const reconcile = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const response = await fetch("/api/admin/inventory", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ variant_id: selected.variant_id, action: "reconcile" }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) { setMessage(result.error || "Could not recalculate"); return; }
+    setRows((current) => current.map((row) => (row.variant_id === selected.variant_id ? { ...row, reserved: result.reserved } : row)));
+    setSelected((current) => (current ? { ...current, reserved: result.reserved } : current));
+    setMessage(result.reconciled ? `Reserved corrected to ${result.reserved}` : "Reserved already matches open orders");
+    loadDetail(selected.variant_id);
+    window.setTimeout(() => setMessage(""), 3000);
+  };
   const visible = rows.filter(
     (row) =>
       `${row.product_name} ${row.sku} ${row.variant_title}`
         .toLowerCase()
         .includes(query.toLowerCase()) &&
       (availability === "all" ||
-        (availability === "low" && row.stock <= row.low_stock_threshold) ||
-        (availability === "healthy" && row.stock > row.low_stock_threshold)),
+        (availability === "low" && row.stock - row.reserved <= row.low_stock_threshold) ||
+        (availability === "out" && row.stock - row.reserved <= 0) ||
+        (availability === "stranded" && row.reserved > 0) ||
+        (availability === "healthy" && row.stock - row.reserved > row.low_stock_threshold)),
   );
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selected) return;
     const data = new FormData(event.currentTarget);
     const stock = Number(data.get("stock"));
+    const threshold = Number(data.get("threshold"));
     const reason = String(data.get("reason"));
     setSaving(true);
     if (isSupabaseConfigured) {
@@ -1400,6 +1441,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
         body: JSON.stringify({
           variant_id: selected.variant_id,
           on_hand: stock,
+          low_stock_threshold: threshold,
           reason,
         }),
       });
@@ -1412,7 +1454,7 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
     }
     setRows((current) =>
       current.map((row) =>
-        row.variant_id === selected.variant_id ? { ...row, stock } : row,
+        row.variant_id === selected.variant_id ? { ...row, stock, low_stock_threshold: threshold } : row,
       ),
     );
     setSaving(false);
@@ -1439,6 +1481,8 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
           <option value="all">All stock</option>
           <option value="low">Low stock</option>
           <option value="healthy">Healthy stock</option>
+          <option value="out">Nothing sellable</option>
+          <option value="stranded">Has reserved units</option>
         </select>
       </div>
       <div className="admin-panel">
@@ -1519,13 +1563,20 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                 <p>Stock adjustment</p>
                 <h2>{selected.product_name}</h2>
                 <small>
-                  {selected.variant_title} · {selected.sku} · currently {selected.stock}
+                  {selected.variant_title} · {selected.sku}
                 </small>
               </div>
               <button type="button" onClick={() => setSelected(null)}>
                 <X />
               </button>
             </header>
+
+            <div className="inv-figures">
+              <span><b>{bn(selected.stock)}</b>on hand</span>
+              <span><b>{bn(selected.reserved)}</b>reserved</span>
+              <span className="inv-sellable"><b>{bn(Math.max(0, selected.stock - selected.reserved))}</b>sellable</span>
+            </div>
+
             <label>
               New total stock
               <input
@@ -1536,17 +1587,69 @@ function Inventory({ rows: initialRows }: { rows: InventoryRow[] }) {
                 required
                 autoFocus
               />
-              <small>Cannot go below reserved stock.</small>
+              <small>Cannot go below the {bn(selected.reserved)} units reserved by open orders.</small>
+            </label>
+            <label>
+              Low stock alert at
+              <input name="threshold" type="number" min={0} defaultValue={selected.low_stock_threshold} required />
+              <small>This variant is flagged when sellable stock reaches this number.</small>
             </label>
             <label>
               Reason for adjustment
               <textarea
                 name="reason"
-                rows={3}
+                rows={2}
                 required
                 placeholder="e.g. new stock received / damaged item correction"
               />
             </label>
+
+            <section className="inv-reserved">
+              <h3>Why {bn(selected.reserved)} unit{selected.reserved === 1 ? " is" : "s are"} reserved</h3>
+              <p>Reserved stock is held by open orders, so it is not typed in by hand. It rises when an order is placed and falls when that order is delivered or cancelled.</p>
+              {!detail && <p className="inv-muted">Loading open orders...</p>}
+              {detail && detail.holders.length > 0 && (
+                <ul>
+                  {detail.holders.map((holder) => (
+                    <li key={holder.order_id}>
+                      <span>#{holder.order_number}</span>
+                      <small>{holder.customer_name} · {statusLabel[holder.status] || holder.status}</small>
+                      <b>{bn(holder.quantity)}</b>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {detail && !detail.holders.length && <p className="inv-muted">No open order is holding this variant.</p>}
+              {detail && detail.expectedReserved !== selected.reserved && (
+                <div className="inv-mismatch">
+                  <AlertTriangle />
+                  <p>
+                    <strong>Reserved says {bn(selected.reserved)}, open orders account for {bn(detail.expectedReserved)}.</strong>
+                    <small>{bn(Math.abs(selected.reserved - detail.expectedReserved))} unit(s) are stranded and cannot be sold.</small>
+                  </p>
+                  <button type="button" disabled={saving} onClick={reconcile}>Recalculate</button>
+                </div>
+              )}
+            </section>
+
+            {detail && detail.movements.length > 0 && (
+              <section className="inv-movements">
+                <h3>Recent movements</h3>
+                <ul>
+                  {detail.movements.map((movement, index) => (
+                    <li key={index}>
+                      <span>{movement.movement_type.replace(/_/g, " ")}</span>
+                      <b className={movement.quantity_delta < 0 ? "down" : movement.quantity_delta > 0 ? "up" : ""}>
+                        {movement.quantity_delta > 0 ? "+" : ""}{movement.quantity_delta || "—"}
+                      </b>
+                      <small>{movement.reason}</small>
+                      <time>{new Date(movement.created_at).toLocaleDateString("en-GB")}</time>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <footer>
               <button type="button" onClick={() => setSelected(null)}>
                 Cancel
