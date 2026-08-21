@@ -392,3 +392,13 @@
 .inv-movements li b.down { color: #a34236; }
 .inv-movements li small { color: #8b928c; grid-column: 3; }
 .inv-movements li time { color: #8b928c; }
+
+/* The base grid ends in a 30px track sized for one icon, but these rows carry a
+   two-button .row-actions, so the delete icon overflowed and the panel clipped it.
+   The name column also needs minmax(0,…) so a long name truncates instead of
+   pushing the actions out of the panel. */
+.simple-list article { grid-template-columns: 38px minmax(0, 1fr) auto auto; }
+.simple-list article > p { min-width: 0; }
+.simple-list article > b { white-space: nowrap; }
+/* the loading and empty rows have a single child, which otherwise lands in the 38px icon track */
+.simple-list article > p:only-child { grid-column: 1 / -1; }
