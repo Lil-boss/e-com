@@ -37,14 +37,22 @@
 
 .inventory-modal {
   width: min(480px, calc(100vw - 32px));
-  overflow: hidden;
+  /* the detail sections make this taller than the viewport, so it has to scroll */
+  max-height: 92vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   border-radius: 13px;
   background: #fff;
 }
 
 .inventory-modal > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 18px 20px;
   border-bottom: 1px solid var(--ad-line);
+  background: #fff;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -60,7 +68,7 @@
 .inventory-modal input,
 .inventory-modal textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--ad-line); border-radius: 7px; }
 .inventory-modal label small { color: #7b847c; font-weight: 400; }
-.inventory-modal > footer { padding: 14px 20px; border-top: 1px solid var(--ad-line); display: flex; justify-content: flex-end; gap: 8px; }
+.inventory-modal > footer { position: sticky; bottom: 0; z-index: 2; padding: 14px 20px; border-top: 1px solid var(--ad-line); background: #fff; display: flex; justify-content: flex-end; gap: 8px; }
 .inventory-modal footer button { min-height: 38px; padding: 0 13px; border: 1px solid var(--ad-line); border-radius: 7px; background: #fff; }
 .inventory-modal footer button:last-child { border-color: var(--ad-green); color: #fff; background: var(--ad-green); }
 .inventory-empty { padding: 50px 20px; text-align: center; color: #7a847c; }
